@@ -24,6 +24,7 @@ struct File {
     explicit File(QString path);
 
     bool isCreated();
+    bool isEmpty();
 };
 
 QDebug operator<<(QDebug dbg, const File& data);

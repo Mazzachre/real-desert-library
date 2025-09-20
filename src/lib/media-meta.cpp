@@ -1,4 +1,6 @@
 #include "media-meta.h"
+#include <QMimeData>
+#include <QMimeDatabase>
 extern "C" {
     #include <libavformat/avformat.h>
     #include <libavutil/dict.h>
@@ -15,32 +17,111 @@ QString resolution(int width, int height) {
 }
 
 Rd::Library::MediaMeta::MediaMeta(QObject* parent)
-: QObject(parent) {
+: QObject(parent)
+, m_localPath{new Rd::Library::LocalPath} {
+    connect(&m_mimeWatcher, &QFutureWatcher<QVariantMap>::finished, this, [this]() {
+        QVariantMap result = m_mimeWatcher.result();
+        Q_EMIT mimeSorted(result["videos"].value<QList<QUrl>>(), result["subtitles"].value<QMap<QString, QUrl>>());
+    });
+
+    connect(&m_metaWatcher, &QFutureWatcher<QList<File>>::finished, this, [this]() {
+        QList<File> result = m_metaWatcher.result();
+        Q_EMIT filesMeta(result);
+    });
 }
 
 Rd::Library::MediaMeta::~MediaMeta() noexcept {
+    m_mimeWatcher.cancel();
+    m_mimeWatcher.waitForFinished();
+
+    m_metaWatcher.cancel();
+    m_metaWatcher.waitForFinished();
+
+    m_localPath->deleteLater();
 }
 
-QSqlError Rd::Library::MediaMeta::getFileMeta(File& file) {
-    if (file.path.isEmpty()) {
-        return QSqlError("Unable to get meta data", "No path given to get meta data");
+void Rd::Library::MediaMeta::mimeSort(const QList<QUrl>& urls) {
+    if (m_mimeWatcher.isRunning()) {
+        Q_EMIT error("Error getting file mime types", "Attempting to run multiple mime sorts");
+        return;
     }
 
+    QFuture<QVariantMap> future = QtConcurrent::run([this, urls]() {
+        return this->doMimeSort(urls);
+    });
+    m_mimeWatcher.setFuture(future);
+}
+
+void Rd::Library::MediaMeta::getFilesMeta(const QList<QUrl>& urls, const QMap<QString, QUrl>& subtitles) {
+    if (m_metaWatcher.isRunning()) {
+        Q_EMIT error("Error getting file meta data", "Attempting to run multiple meta data fetchers");
+        return;
+    }
+
+    QFuture<QList<File>> future = QtConcurrent::run([this, urls, subtitles] {
+        return this->doGetFilesMeta(urls, subtitles);
+    });
+    m_metaWatcher.setFuture(future);
+}
+
+QVariantMap Rd::Library::MediaMeta::doMimeSort(const QList<QUrl>& urls) {
+    QList<QUrl> videos;
+    QMap<QString, QUrl> subtitles;
+    QMimeDatabase mime;
+
+    for(const QUrl& url : urls) {
+        if (m_localPath->isLocalOrSmb(url)) {
+            QMimeType type = mime.mimeTypeForUrl(url);
+            if(type.name().startsWith(u"video/")) {
+                videos << url;
+            } else if (type.inherits("application/x-subrip")) {
+                subtitles.insert(QFileInfo(url.fileName()).completeBaseName(), url);
+            } else {
+                qDebug() << "Unhandled file type" << type.name();
+            }
+        }
+    }
+
+    return QVariantMap({
+        {"videos", QVariant::fromValue(videos)},
+        {"subtitles", QVariant::fromValue(subtitles)}
+    });
+}
+
+QList<File> Rd::Library::MediaMeta::doGetFilesMeta(const QList<QUrl>& urls, const QMap<QString, QUrl>& subtitles) {
+    QList<File> files;
+
+    for(const QUrl& url : urls) {
+        File file = getFileMeta(url);
+        if (!file.isEmpty()) {
+            files << file;
+        }
+    }
+
+    return files;
+}
+
+File Rd::Library::MediaMeta::getFileMeta(const QUrl& url) {
+    QString path = m_localPath->getLocalPath(url);
+
     AVFormatContext* fmt_ctx = nullptr;
-    int err = avformat_open_input(&fmt_ctx, file.path.toLatin1(), nullptr, nullptr);
+    int err = avformat_open_input(&fmt_ctx, path.toLatin1(), nullptr, nullptr);
     if (err != 0) {
         char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
         av_strerror(err, errbuf, sizeof(errbuf));
-        return QSqlError("Unable to get meta data", QString::fromUtf8(errbuf));
+        Q_EMIT error("Unable to get meta data", QString::fromUtf8(errbuf));
+        return File();
     }
 
     err = avformat_find_stream_info(fmt_ctx, nullptr);
     if (err < 0) {
         char errbuf[AV_ERROR_MAX_STRING_SIZE] = {0};
         av_strerror(err, errbuf, sizeof(errbuf));
-        return QSqlError("Unable to get meta data", QString::fromUtf8(errbuf));
+        Q_EMIT error("Unable to get meta data", QString::fromUtf8(errbuf));
+        return File();
     }
 
+    File file(url.toString());
     file.runtime = (fmt_ctx->duration + ((AV_TIME_BASE * 60) - 1)) / (AV_TIME_BASE * 60);
 
     AVDictionaryEntry* metaTag = nullptr;
@@ -95,5 +176,5 @@ QSqlError Rd::Library::MediaMeta::getFileMeta(File& file) {
 
     avformat_close_input(&fmt_ctx);
 
-    return QSqlError();
+    return file;
 }

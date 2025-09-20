@@ -2,8 +2,6 @@
 
 #include <QDebug>
 
-// Rd::Ui::BusyHandler* Rd::Ui::BusyHandler::m_self = nullptr;
-
 Rd::Ui::BusyHandler::BusyHandler(QObject* parent)
 : QObject(parent) {
 }
@@ -19,10 +17,6 @@ void Rd::Ui::BusyHandler::setBusy(bool busy) {
 }
 
 Rd::Ui::BusyHandler* Rd::Ui::BusyHandler::instance() {
-    // if (m_self == nullptr) {
-    //     m_self = new BusyHandler();
-    // }
-    // return m_self;
     static BusyHandler instance;
     return &instance;
 }

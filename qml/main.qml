@@ -50,7 +50,30 @@ Window {
         }
     }
 
-    //TODO Handle busy
+    Rectangle {
+        anchors.fill: parent
+        color: "#80000000"
+        visible: BusyIndication.busy
+        z: 9999
+
+        ProgressBar {
+            anchors.centerIn: parent
+            indeterminate: true
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            enabled: true
+            hoverEnabled: true
+            preventStealing: true
+            propagateComposedEvents: false
+            acceptedButtons: Qt.AllButtons
+        }
+
+        Behavior on visible {
+            NumberAnimation { duration: 200 }
+        }
+    }
 
     //TODO Handle error popup
 }

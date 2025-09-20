@@ -95,16 +95,13 @@ QVariant Rd::Ui::Show::EpisodeMatch::data(const QModelIndex& index, int role) co
     return QVariant();
 }
 
-void Rd::Ui::Show::EpisodeMatch::handleFilesAdded(const QList<QVariantMap>& files) {
+void Rd::Ui::Show::EpisodeMatch::handleFilesAdded(const QList<File>& files) {
     beginResetModel();
-    for (auto& item : files) {
-        if (item["type"] == "known" || item["type"] == "created") {
-            File file = item["file"].value<File>();
-            m_files.append(file);
-            quint32 match = getEpisode(findMatch(file.path));
-            if (match != 0) {
-                m_matches[file.id] = match;
-            }
+    for (auto& file: files) {
+        m_files.append(file);
+        quint32 match = getEpisode(findMatch(file.path));
+        if (match != 0) {
+            m_matches[file.id] = match;
         }
     }
     endResetModel();

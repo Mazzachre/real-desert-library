@@ -14,7 +14,6 @@ namespace Rd {
             void setBusy(bool busy);
             Q_SIGNAL void busyUpdated();
         private:
-            // static BusyHandler* m_self;
             bool m_busy = false;
 
             explicit BusyHandler(QObject* parent = nullptr);

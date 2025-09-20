@@ -9,7 +9,7 @@ find_library(AVFORMAT_LIBRARY avformat)
 find_library(AVCODEC_LIBRARY avcodec)
 find_library(AVUTIL_LIBRARY avutil)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Qml Quick DBus Sql)
+find_package(Qt6 REQUIRED COMPONENTS Core Concurrent Widgets Network Qml Quick DBus Sql)
 qt_standard_project_setup()
 
 qt_add_executable(real-desert-library
@@ -23,6 +23,7 @@ qt_add_executable(real-desert-library
     src/db/migration/migrate.cpp
     src/lib/add-show.cpp
     src/lib/media-meta.cpp
+    src/lib/local-path.cpp
     src/model/show-search-result.cpp
     src/model/movie-search-result.cpp
     src/model/file.cpp
@@ -101,6 +102,7 @@ qt_add_qml_module(real-desert-library
 target_link_libraries(real-desert-library
     PRIVATE
     Qt6::Core
+    Qt6::Concurrent
     Qt6::Widgets
     Qt6::Network
     Qt6::Qml

@@ -47,7 +47,7 @@ namespace Rd {
                 QVariantList m_episodes;
                 QMap<quint32, quint32> m_matches;
 
-                Q_SLOT void handleFilesAdded(const QList<QVariantMap>& files);
+                Q_SLOT void handleFilesAdded(const QList<File>& files);
                 QVariantMap findMatch(const QString& path);
                 quint32 getEpisode(const QVariantMap& match);
             };
