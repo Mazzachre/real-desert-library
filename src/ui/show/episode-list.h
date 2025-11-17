@@ -2,7 +2,8 @@
 
 #include <QAbstractListModel>
 #include <QList>
-#include "../../model/episode-list-item.h"
+#include "model/episode-list-item.h"
+#include "lib/local-path.h"
 
 namespace Rd {
     namespace Ui {
@@ -21,19 +22,26 @@ namespace Rd {
                     NameRole,
                     FavoriteRole,
                     RuntimeRole,
+                    PathRole,
+                    FileRole,
+                    FileNameRole,
+                    FileTimeRole,
                     SubtitlesRole,
+                    SubtitleSelectedRole,
                     PlayedRole,
+                    PlayedFullyRole,
+                    PlaybackListRole,
                 };
 
                 explicit EpisodeList(QObject* parent = nullptr);
                 ~EpisodeList() noexcept;
 
-                void setEpisodes(const QList<EpisodeListItem>& episodes);
+                Q_SLOT void setEpisodes(const QList<EpisodeListItem>& episodes);
                 void clear();
 
-                Q_SLOT void toggleFavorite(quint32 id);
                 Q_SLOT void updateFavorite(quint32 id, bool favorite);
-                Q_SIGNAL void favoriteSet(quint32 id, bool favorite);
+                Q_SLOT void updateSubtitle(quint32 fileId, const QString& subtitle);
+                Q_SLOT void updatePlayed(const Playback& playback);
 
                 Q_SLOT void openDetails(quint32 id);
                 Q_SIGNAL void detailsOpened(const EpisodeListItem& episode);
@@ -50,10 +58,14 @@ namespace Rd {
                 void setSelected(quint32 selected);
                 Q_SIGNAL void selectedUpdated();
 
+                Q_INVOKABLE void play(bool list = false);
+
                 QHash<int, QByteArray> roleNames() const override;
                 int rowCount(const QModelIndex &parent = QModelIndex()) const override;
                 QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
             private:
+                Rd::Library::LocalPath* m_localPath;
+
                 bool m_favorites;
                 bool m_playables;
                 quint32 m_selected;
@@ -64,7 +76,6 @@ namespace Rd {
                 void addToFiltered(const EpisodeListItem& episode);
                 void removeFromFiltered(quint32 id);
                 void updateFiltered(const EpisodeListItem& episode);
-                bool isPlayable(const QString& path) const;
             };
         }
     }

@@ -2,6 +2,8 @@
 
 #include "migration.h"
 
+// CREATE INDEX idx_genre_links_imdb ON genre_links(imdb_id);
+
 namespace Rd {
     namespace Database {
         namespace Migration {

@@ -1,13 +1,51 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
-Dialog {
+ModalDialog {
     id: dialog
-    title: "Episode: " + ShowUI.details.name
-    modal: true
-    standardButtons: Dialog.Ok
+    standardButtons: Dialog.Close
+
+    header: ToolBar {
+        RowLayout {
+            anchors.fill: parent
+            spacing: 10
+
+            Label {
+                text: "Episode: " + ShowUI.episode.name
+                font.bold: true
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            ToolButton {
+                text: "Extras"
+                onClicked: ExtrasUI.load(ExtrasType.Episode, ShowUI.episode.id);
+            }
+
+            ToolSeparator {
+                orientation: Qt.Vertical
+            }
+
+            Label {
+                text: "Favorite"
+            }
+
+            CheckField {
+                width: 24
+                height: 24
+                state: ShowUI.episode.favorite
+                onToggle: {
+                    ShowUI.setFavorite(ShowUI.episode.id, !ShowUI.episode.favorite)
+                }
+            }
+        }
+    }
 
     contentItem: ScrollView {
         clip: true
@@ -18,50 +56,45 @@ Dialog {
             width: dialog.width - 15
             spacing: 10
 
-            Row {
-                Text {
-                    font.bold: true
-                    width: 120
-                    text: "Favorite"
-                }
-
-                CheckField {
-                    width: 24
-                    height: 24
-                    state: ShowUI.details.favorite
-                    onToggle: {
-                        ShowUI.details.setFavorite()
-                    }
-                }
-            }
-
             DefinitionList {
                 width: parent.width
-                definitions: ShowUI.details.episode
+                definitions: ShowUI.episode.episode
+            }
+
+            PeopleList {
+                width: parent.width
+                title: "Guest Stars"
+                people: ShowUI.episode.cast
+            }
+
+            PeopleList {
+                width: parent.width
+                title: "Crew"
+                people: ShowUI.episode.crew
             }
 
             DefinitionList {
                 width: parent.width
                 title: "File"
-                definitions: ShowUI.details.file
+                definitions: ShowUI.episode.file
             }
 
             DefinitionList {
                 width: parent.width
                 title: "Video"
-                definitions: ShowUI.details.video
+                definitions: ShowUI.episode.video
             }
 
             DefinitionList {
                 width: parent.width
                 title: "Audio"
-                definitions: ShowUI.details.audio
+                definitions: ShowUI.episode.audio
             }
 
             DefinitionList {
                 width: parent.width
                 title: "Subtitle"
-                definitions: ShowUI.details.subtitle
+                definitions: ShowUI.episode.subtitle
             }
         }
     }

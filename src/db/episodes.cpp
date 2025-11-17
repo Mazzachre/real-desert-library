@@ -6,7 +6,8 @@
 
 Rd::Database::Episodes::Episodes(QObject* parent)
 : QObject(parent)
-, m_castCrew{new CastCrew} {
+, m_castCrew{new CastCrew}
+, m_playbacks{new Playbacks} {
     m_create_functions = {
         &Episodes::createEpisode,
         &Episodes::createEpisodeCast,
@@ -14,11 +15,13 @@ Rd::Database::Episodes::Episodes(QObject* parent)
     };
     m_load_functions = {
         &Episodes::loadFile,
-        &Episodes::loadCastAndCrew
+        &Episodes::loadCastAndCrew,
+        &Episodes::loadPlayback
     };
 }
 
 Rd::Database::Episodes::~Episodes() noexcept {
+    m_playbacks->deleteLater();
     m_castCrew->deleteLater();
 }
 
@@ -114,20 +117,19 @@ QSqlError Rd::Database::Episodes::createEpisodeCast(const QSqlDatabase& db, cons
     QSqlQuery query(db);
     query.prepare("INSERT INTO episode_cast (episode_id, cast_crew_id, role) VALUES (:episode_id, :cast_crew_id, :role)");
 
-    for (auto it = episode.cast.constBegin(); it != episode.cast.constEnd(); ++it) {
-        QSqlError error = m_castCrew->createPerson(it.value());
+    for (auto& it : episode.cast) {
+        QSqlError error = m_castCrew->createPerson(it.person);
         if (error.type() != QSqlError::NoError) {
             return error;
         }
 
         query.bindValue(":episode_id", episode.id);
-        query.bindValue(":cast_crew_id", it.value().id);
-        query.bindValue(":role", it.key());
+        query.bindValue(":cast_crew_id", it.person.id);
+        query.bindValue(":role", it.role);
         if (!query.exec()) {
             return query.lastError();
         }
     }
-
     return QSqlError();
 }
 
@@ -135,40 +137,40 @@ QSqlError Rd::Database::Episodes::createEpisodeCrew(const QSqlDatabase& db, cons
     QSqlQuery query(db);
     query.prepare("INSERT INTO episode_cast (episode_id, cast_crew_id, job) VALUES (:episode_id, :cast_crew_id, :job)");
 
-    for (auto it = episode.crew.constBegin(); it != episode.crew.constEnd(); ++it) {
-        QSqlError error = m_castCrew->createPerson(it.value());
+    for (auto& it : episode.crew) {
+        QSqlError error = m_castCrew->createPerson(it.person);
         if (error.type() != QSqlError::NoError) {
             return error;
         }
 
         query.bindValue(":episode_id", episode.id);
-        query.bindValue(":cast_crew_id", it.value().id);
-        query.bindValue(":job", it.key());
+        query.bindValue(":cast_crew_id", it.person.id);
+        query.bindValue(":job", it.job);
         if (!query.exec()) {
             return query.lastError();
         }
     }
-
     return QSqlError();
 }
 
 QSqlError Rd::Database::Episodes::load(const QSqlDatabase& db, const quint32 id, QList<EpisodeListItem>& episodes) {
     QSqlQuery query(db);
-    query.prepare("SELECT id, season, episode, name, overview, air_date, runtime, favorite FROM episodes WHERE show_id = :id ORDER BY season, episode ASC");
+    query.prepare("SELECT id, season, episode, name, overview, air_date, runtime, favorite, (SELECT COUNT(*) > 0 FROM extras WHERE extras.episode_id = episodes.id) AS has_extras FROM episodes WHERE show_id = :id ORDER BY season, episode ASC");
     query.bindValue(":id", id);
     if (!query.exec()) {
         return query.lastError();
     }
     while (query.next()) {
         EpisodeListItem item;
-        item.id = query.value("id").toInt();
-        item.season = query.value("season").toInt();
-        item.episode = query.value("episode").toInt();
+        item.id = query.value("id").toUInt();
+        item.season = query.value("season").toUInt();
+        item.episode = query.value("episode").toUInt();
         item.name = query.value("name").toString();
         item.overview = query.value("overview").toString();
         item.airDate = query.value("air_date").toDate();
-        item.officialRuntime = query.value("runtime").toInt();
+        item.officialRuntime = query.value("runtime").toUInt();
         item.favorite = query.value("favorite").toBool();
+        item.hasExtras = query.value("has_extras").toBool();
         episodes.append(item);
     }
 
@@ -177,13 +179,14 @@ QSqlError Rd::Database::Episodes::load(const QSqlDatabase& db, const quint32 id,
 
 QSqlError Rd::Database::Episodes::loadFile(const QSqlDatabase& db, EpisodeListItem& episode) {
     QSqlQuery query(db);
-    query.prepare("SELECT path, runtime, selected_subtitle, selected_video, selected_audio, meta, subtitles, video, audio FROM files JOIN episode_files ON episode_files.file_id = files.id WHERE episode_files.episode_id = :episode_id ORDER BY id LIMIT 2");
+    query.prepare("SELECT id, path, runtime, selected_subtitle, selected_video, selected_audio, meta, subtitles, video, audio FROM files JOIN episode_files ON episode_files.file_id = files.id WHERE episode_files.episode_id = :episode_id ORDER BY id LIMIT 2");
     query.bindValue(":episode_id", episode.id);
     if (!query.exec()) {
         return query.lastError();
     }
 
     if (query.next()) {
+        episode.fileId = query.value("id").toUInt();
         episode.path = query.value("path").toString();
         episode.actualRuntime = query.value("runtime").toInt();
         episode.meta = query.value("meta").toMap();
@@ -194,6 +197,7 @@ QSqlError Rd::Database::Episodes::loadFile(const QSqlDatabase& db, EpisodeListIt
             return videoError;
         }
         episode.video = video;
+        episode.selectedVideo = query.value("selected_video");
 
         QVariantMap audio;
         QSqlError audioError = getMetaData(query.value("audio"), query.value("selected_audio"), audio);
@@ -201,6 +205,7 @@ QSqlError Rd::Database::Episodes::loadFile(const QSqlDatabase& db, EpisodeListIt
             return audioError;
         }
         episode.audio = audio;
+        episode.selectedAudio = query.value("selected_audio");
 
         QVariantMap subtitles;
         QSqlError subtitlesError = getMetaData(query.value("subtitles"), query.value("selected_subtitle"), subtitles);
@@ -208,6 +213,9 @@ QSqlError Rd::Database::Episodes::loadFile(const QSqlDatabase& db, EpisodeListIt
             return subtitlesError;
         }
         episode.subtitles = subtitles;
+        episode.selectedSubtitle = query.value("selected_subtitle");
+
+        //TODO Am I even going to get in this position???
         episode.multiple = query.next();
     }
     return QSqlError();
@@ -215,23 +223,28 @@ QSqlError Rd::Database::Episodes::loadFile(const QSqlDatabase& db, EpisodeListIt
 
 QSqlError Rd::Database::Episodes::loadCastAndCrew(const QSqlDatabase& db, EpisodeListItem& episode) {
     QSqlQuery query(db);
-    query.prepare("SELECT cc.id, cc.name, cc.original_name, cc.profile_path, ec.job, ec.role FROM episode_cast ec JOIN cast_crew cc ON cc.id = ec.cast_crew_id WHERE ec.episode_id = :episode_id");
+    query.prepare("SELECT cc.id, cc.name, cc.original_name, cc.profile_path, ec.job, ec.role FROM episode_cast ec JOIN cast_crew cc ON cc.id = ec.cast_crew_id WHERE ec.episode_id = :episode_id ORDER BY cc.id");
     query.bindValue(":episode_id", episode.id);
     if (!query.exec()) {
         return query.lastError();
     }
 
     while (query.next()) {
-        Person person(query.record());
         if (!query.value("job").isNull()) {
-            episode.crew.insert(query.value("job").toString(), person);
+            episode.crew.append(Crew(query.record()));
         }
         if (!query.value("role").isNull()) {
-            episode.cast.insert(query.value("role").toString(), person);
+            episode.cast.append(Cast(query.record()));
         }
     }
 
+    std::sort(episode.cast.begin(), episode.cast.end());
+
     return QSqlError();
+}
+
+QSqlError Rd::Database::Episodes::loadPlayback(const QSqlDatabase& db, EpisodeListItem& episode) {
+    return m_playbacks->loadPlaybacks(db, episode.fileId, episode.playback);
 }
 
 QSqlError Rd::Database::Episodes::getMetaData(const QVariant& map, const QVariant& selected, QVariantMap& result) {

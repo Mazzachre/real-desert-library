@@ -1,12 +1,12 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
 Item {
     Row {
         spacing: 2
-        width: parent.width - 25
+        width: parent.width - 23
         height: 24
 
         Rectangle {
@@ -85,7 +85,7 @@ Item {
 
         delegate: Rectangle {
             height: 24
-            width: parent ? parent.width - 24 : 0
+            width: parent ? parent.width - 15 : 0
             radius: 3
             color: (showMouseHandler.containsMouse) ? "#FFD580" : "#FFFFFF"
 
@@ -95,7 +95,7 @@ Item {
                 enabled: true
                 hoverEnabled: true
                 onClicked: {
-                    ShowUI.loadShow(id);
+                    ShowUI.load(id);
                 }
             }
 

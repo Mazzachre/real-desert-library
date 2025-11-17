@@ -1,9 +1,12 @@
 #include "episode-list.h"
-#include "../file-handler.h"
-#include "../mode-handler.h"
+#include "ui/file-handler.h"
+#include "ui/mode-handler.h"
+#include "lib/format.h"
+#include <bits/stdc++.h>
 
 Rd::Ui::Show::EpisodeList::EpisodeList(QObject* parent)
-: QAbstractListModel(parent) {
+: QAbstractListModel(parent)
+, m_localPath{new Rd::Library::LocalPath} {
     m_playables = true;
 }
 
@@ -27,15 +30,6 @@ void Rd::Ui::Show::EpisodeList::clear() {
     Q_EMIT playablesUpdated();
 }
 
-void Rd::Ui::Show::EpisodeList::toggleFavorite(quint32 id) {
-    for (auto& item: m_episodes) {
-        if (item.id == id) {
-            Q_EMIT favoriteSet(id, !item.favorite);
-            break;
-        }
-    }
-}
-
 void Rd::Ui::Show::EpisodeList::updateFavorite(quint32 id, bool favorite) {
     for (auto& item: m_episodes) {
         if (item.id == id) {
@@ -52,6 +46,41 @@ void Rd::Ui::Show::EpisodeList::updateFavorite(quint32 id, bool favorite) {
                 updateFiltered(item);
             }
 
+            break;
+        }
+    }
+}
+
+void Rd::Ui::Show::EpisodeList::updateSubtitle(quint32 fileId, const QString& subtitle) {
+    for (auto& item : m_episodes) {
+        if (item.fileId == fileId) {
+            item.selectedSubtitle = subtitle;
+            //TODO update subtitle info?
+            break;
+        }
+    }
+    for (int i = 0; i < m_filtered.count(); ++i) {
+        auto& item = m_filtered[i];
+        if (item.fileId == fileId) {
+            item.selectedSubtitle = subtitle;
+            Q_EMIT dataChanged(index(i), index(i), {SubtitleSelectedRole});
+            break;
+        }
+    }
+}
+
+void Rd::Ui::Show::EpisodeList::updatePlayed(const Playback& playback) {
+    for (auto& item : m_episodes) {
+        if (item.fileId == playback.fileId) {
+            item.playback.append(playback);
+            break;
+        }
+    }
+    for (int i = 0; i < m_filtered.count(); ++i) {
+        auto& item = m_filtered[i];
+        if (item.fileId == playback.fileId) {
+            item.playback.append(playback);
+            Q_EMIT dataChanged(index(i), index(i), {PlayedRole, PlaybackListRole, PlayedFullyRole});
             break;
         }
     }
@@ -93,12 +122,45 @@ quint32 Rd::Ui::Show::EpisodeList::selected() {
 void Rd::Ui::Show::EpisodeList::setSelected(quint32 selected) {
     for (const auto& episode : m_episodes) {
         if (episode.id == selected) {
-            if (isPlayable(episode.path)) {
+            if (episode.isPlayable()) {
                 m_selected = selected;
                 Q_EMIT selectedUpdated();
             }
             break;
         }
+    }
+}
+
+void Rd::Ui::Show::EpisodeList::play(bool list) {
+    if (list && m_selected > 0) {
+        QList<EpisodeListItem> reordered;
+        int index = -1;
+        for (int i = 0; i < m_filtered.size(); ++i) {
+            if (m_filtered[i].id == m_selected) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            for (int i = index; i < m_filtered.count(); ++i) {
+                reordered.append(m_filtered[i]);
+            }
+            for (int i = 0; i < index; ++i) {
+                reordered.append(m_filtered[i]);
+            }
+        }
+        qDebug() << "Play" << reordered;
+    } else if (list) {
+        qDebug() << "Play" << m_filtered;
+    } else if (m_selected > 0) {
+        for (auto& item : m_filtered) {
+            if (item.id == m_selected) {
+                qDebug() << "Play" << item;
+                break;
+            }
+        }
+    } else {
+        qDebug() << "Play" << m_filtered[0];
     }
 }
 
@@ -111,8 +173,15 @@ QHash<int, QByteArray> Rd::Ui::Show::EpisodeList::roleNames() const {
         {NameRole, "name"},
         {FavoriteRole, "favorite"},
         {RuntimeRole, "runtime"},
+        {PathRole, "path"},
+        {FileRole, "file"},
+        {FileNameRole, "fileName"},
+        {FileTimeRole, "fileRuntime"},
         {SubtitlesRole, "subtitles"},
+        {SubtitleSelectedRole, "subtitleSelected"},
         {PlayedRole, "played"},
+        {PlayedFullyRole, "playedFully"},
+        {PlaybackListRole, "playbackList"},
     };
 }
 
@@ -127,7 +196,7 @@ QVariant Rd::Ui::Show::EpisodeList::data(const QModelIndex& index, int role) con
             case IdRole:
                 return item.id;
             case PlayableRole:
-                return isPlayable(item.path);
+                return item.isPlayable();
             case SeasonRole:
                 return static_cast<int>(item.season);
             case EpisodeRole:
@@ -136,16 +205,40 @@ QVariant Rd::Ui::Show::EpisodeList::data(const QModelIndex& index, int role) con
                 return item.name;
             case FavoriteRole:
                 return item.favorite;
-            case RuntimeRole: {
-                QString runtime = QString("%1:%2")
-                    .arg(item.actualRuntime / 60)
-                    .arg(item.actualRuntime % 60, 2, 10, QChar('0'));
-                return runtime;
+            case RuntimeRole:
+                return Library::formatRuntime(item.actualRuntime);
+            case PathRole: {
+                QUrl url(item.path);
+                return QUrl::fromLocalFile(m_localPath->getLocalPath(url.adjusted(QUrl::RemoveFilename)));
             }
+            case FileRole:
+                return item.fileId;
+            case FileNameRole: {
+                QUrl url(item.path);
+                return url.fileName();
+            }
+            case FileTimeRole:
+                return static_cast<int>(item.actualRuntime);
             case SubtitlesRole:
                 return !item.subtitles.isEmpty();
+            case SubtitleSelectedRole:
+                return item.selectedSubtitle;
             case PlayedRole:
-                return QVariant();
+                return !item.playback.isEmpty();
+            case PlayedFullyRole: {
+                if (item.playback.isEmpty()) return false;
+                quint32 lastPlayed = item.playback[0].played;
+                quint32 runtime = item.actualRuntime*60;
+                quint32 diff = runtime - lastPlayed;
+                return diff < runtime/10;
+            }
+            case PlaybackListRole: {
+                QVariantList result;
+                for (auto& playback : item.playback.first(std::min<int>(5, item.playback.count()))) {
+                    result << playback.toMap(item.actualRuntime);
+                }
+                return result;
+            }
         }
     }
 
@@ -159,7 +252,7 @@ void Rd::Ui::Show::EpisodeList::filterEpisodes() {
         if (m_favorites) {
             if (episode.favorite) m_filtered << episode;
         } else if (m_playables) {
-            if (isPlayable(episode.path)) m_filtered << episode;
+            if (episode.isPlayable()) m_filtered << episode;
         } else {
             m_filtered << episode;
         }
@@ -206,9 +299,4 @@ void Rd::Ui::Show::EpisodeList::updateFiltered(const EpisodeListItem& episode) {
             break;
         }
     }
-}
-
-bool Rd::Ui::Show::EpisodeList::isPlayable(const QString& path) const {
-    if (path.isEmpty()) return false;
-    return true;
 }

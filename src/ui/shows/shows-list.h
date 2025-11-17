@@ -2,7 +2,7 @@
 
 #include <QAbstractListModel>
 #include <QList>
-#include "../../model/show-list-item.h"
+#include "model/show-list-item.h"
 
 namespace Rd {
     namespace Ui {

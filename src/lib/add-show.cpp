@@ -12,8 +12,8 @@ Rd::Library::AddShow::AddShow(QObject* parent)
 , m_show_net{new Rd::Net::Tmdb::Show} {
     connect(m_show_net, &Rd::Net::Tmdb::Show::getResult, this, &AddShow::handleShowResult);
     connect(m_show_net, &Rd::Net::Tmdb::Show::episodesResult, this, &AddShow::handleEpisodeResult);
-    connect(m_show_net, &Rd::Net::Tmdb::Show::error, this, [this](const QString& header, const QString& body) {
-        Q_EMIT error(u"Error adding show: "_qs + header, body);
+    connect(m_show_net, &Rd::Net::Tmdb::Show::error, this, [this](const QString& text) {
+        Q_EMIT error(u"Error adding show: "_qs, text);
     });
 }
 
@@ -106,6 +106,8 @@ void Rd::Library::AddShow::handleEpisodeResult(const QJsonObject& result) {
             return;
         }
 
+        m_episodes.clear();
+        m_seasons.clear();
         Rd::Ui::BusyHandler::instance()->setBusy(false);
         Q_EMIT showAdded(id);
     }

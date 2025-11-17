@@ -12,26 +12,25 @@ namespace Rd {
                     using CreateFn = QSqlError (Initial::*)(const QSqlDatabase&);
 
                     std::vector<CreateFn> creationFunctions = {
+                        &Initial::createImdbUpdateTable,
                         &Initial::createFilesTable,
                         &Initial::createGenresTable,
+                        &Initial::createGenreLinksTable,
+                        &Initial::createGenreUnlinksTable,
                         &Initial::createTagsTable,
                         &Initial::createCastCrewTable,
                         &Initial::createPlaybacksTable,
                         &Initial::createMoviesTable,
                         &Initial::createMovieFilesTable,
-                        &Initial::createMovieGenresTable,
                         &Initial::createMovieTagsTable,
                         &Initial::createMovieCastTable,
                         &Initial::createShowsTable,
-                        &Initial::createShowGenresTable,
                         &Initial::createShowTagsTable,
                         &Initial::createShowCastTable,
                         &Initial::createEpisodesTable,
                         &Initial::createEpisodeFilesTable,
                         &Initial::createEpisodeCastTable,
                         &Initial::createExtrasTable,
-                        &Initial::createPlaylistsTable,
-                        &Initial::createPlaylistFilesTable
                     };
 
                     for (auto fn : creationFunctions) {
@@ -44,6 +43,15 @@ namespace Rd {
                     return QSqlError();
                 }
             private:
+
+                QSqlError createImdbUpdateTable(const QSqlDatabase& db) {
+                    QSqlQuery query(db);
+                    query.prepare("CREATE TABLE imdb_update (\
+  updated TEXT\
+)");
+                    query.exec();
+                    return query.lastError();
+                }
 
                 QSqlError createFilesTable(const QSqlDatabase& db) {
                     QSqlQuery query(db);
@@ -68,7 +76,31 @@ namespace Rd {
                     QSqlQuery query(db);
                     query.prepare("CREATE TABLE genres (\
   id INTEGER PRIMARY KEY,\
-  name TEXT\
+  name TEXT UNIQUE,\
+  source TEXT CHECK (source IN ('IMDB', 'USER'))\
+)");
+                    query.exec();
+                    return query.lastError();
+                }
+
+                QSqlError createGenreLinksTable(const QSqlDatabase& db) {
+                    QSqlQuery query(db);
+                    query.prepare("CREATE TABLE genre_links (\
+  imdb_id TEXT NOT NULL,\
+  genre_id INTEGER NOT NULL,\
+  source TEXT CHECK (source IN ('IMDB', 'USER')),\
+  FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE,\
+  UNIQUE (imdb_id, genre_id)\
+)");
+                    query.exec();
+                    return query.lastError();
+                }
+
+                QSqlError createGenreUnlinksTable(const QSqlDatabase& db) {
+                    QSqlQuery query(db);
+                    query.prepare("CREATE TABLE genre_unlinks (\
+  imdb_id TEXT NOT NULL,\
+  genre_id INTEGER NOT NULL\
 )");
                     query.exec();
                     return query.lastError();
@@ -100,8 +132,8 @@ namespace Rd {
                     QSqlQuery query(db);
                     query.prepare("CREATE TABLE playbacks (\
   file_id INTEGER NOT NULL,\
-  time INTEGER,\
-  playback INTEGER,\
+  time TEXT,\
+  played INTEGER,\
   FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE\
 )");
                     query.exec();
@@ -124,8 +156,8 @@ namespace Rd {
                     QSqlQuery query(db);
                     query.prepare("CREATE TABLE movies (\
   id INTEGER PRIMARY KEY,\
-  imdb TEXT UNIQUE,\
-  title TEXT,\
+  imdb TEXT UNIQUE NOT NULL,\
+  title TEXT NOT NULL,\
   original_title TEXT,\
   origin TEXT,\
   release_date TEXT,\
@@ -134,18 +166,6 @@ namespace Rd {
   languages TEXT,\
   runtime INTEGER,\
   poster_path TEXT\
-)");
-                    query.exec();
-                    return query.lastError();
-                }
-
-                QSqlError createMovieGenresTable(const QSqlDatabase& db) {
-                    QSqlQuery query(db);
-                    query.prepare("CREATE TABLE movie_genres (\
-  movie_id INTEGER NOT NULL,\
-  genre_id INTEGER NOT NULL,\
-  FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE,\
-  FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE\
 )");
                     query.exec();
                     return query.lastError();
@@ -239,26 +259,14 @@ namespace Rd {
                     QSqlQuery query(db);
                     query.prepare("CREATE TABLE shows (\
   id INTEGER PRIMARY KEY,\
-  imdb TEXT UNIQUE,\
-  name TEXT,\
+  imdb TEXT NOT NULL UNIQUE,\
+  name TEXT NOT NULL,\
   original_name TEXT,\
   origin TEXT,\
   tagline TEXT,\
   overview TEXT,\
   languages TEXT,\
   poster_path TEXT\
-)");
-                    query.exec();
-                    return query.lastError();
-                }
-
-                QSqlError createShowGenresTable(const QSqlDatabase& db) {
-                    QSqlQuery query(db);
-                    query.prepare("CREATE TABLE show_genres (\
-  show_id INTEGER NOT NULL,\
-  genre_id INTEGER NOT NULL,\
-  FOREIGN KEY (show_id) REFERENCES shows(id) ON DELETE CASCADE,\
-  FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE\
 )");
                     query.exec();
                     return query.lastError();
@@ -279,38 +287,16 @@ namespace Rd {
                 QSqlError createExtrasTable(const QSqlDatabase& db) {
                     QSqlQuery query(db);
                     query.prepare("CREATE TABLE extras (\
+  id INTEGER PRIMARY KEY,\
   file_id INTEGER NOT NULL,\
+  name TEXT,\
   show_id INTEGER,\
   episode_id INTEGER,\
   movie_id INTEGER,\
   FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,\
-  FOREIGN KEY (show_id) REFERENCES shows(id) ON DELETE SET NULL,\
-  FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE SET NULL,\
-  FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE SET NULL\
-)");
-                    query.exec();
-                    return query.lastError();
-                }
-
-                QSqlError createPlaylistFilesTable(const QSqlDatabase& db) {
-                    QSqlQuery query(db);
-                    query.prepare("CREATE TABLE playlist_files (\
-  file_id INTEGER NOT NULL,\
-  playlist_id INTEGER NOT NULL,\
-  sequence INTEGER,\
-  FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,\
-  FOREIGN KEY (playlist_id) REFERENCES playlists(id) ON DELETE CASCADE,\
-  UNIQUE (playlist_id, sequence)\
-)");
-                    query.exec();
-                    return query.lastError();
-                }
-
-                QSqlError createPlaylistsTable(const QSqlDatabase& db) {
-                    QSqlQuery query(db);
-                    query.prepare("CREATE TABLE playlists (\
-  id INTEGER PRIMARY KEY,\
-  title TEXT UNIQUE NOT NULL\
+  FOREIGN KEY (show_id) REFERENCES shows(id) ON DELETE CASCADE,\
+  FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE,\
+  FOREIGN KEY (movie_id) REFERENCES movies(id) ON DELETE CASCADE\
 )");
                     query.exec();
                     return query.lastError();

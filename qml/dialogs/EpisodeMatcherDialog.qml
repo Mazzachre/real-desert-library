@@ -1,12 +1,11 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
-Dialog {
+ModalDialog {
     id: dialog
-    title: "Match Episodes to files"
-    modal: true
+    title: "Match Episodes: " + ShowUI.show.name
     closePolicy: Popup.CloseOnEscape
     standardButtons: Dialog.Save | Dialog.Cancel
 
@@ -32,19 +31,20 @@ Dialog {
             width: parent ? parent.width - 24 : 0
 
             Row {
-                spacing: 5
+                spacing: 2
                 anchors.fill: parent
 
-                Item {
-                    width: parent.width * 0.40
+                Button {
+                    width: parent.width * 0.05
                     height: parent.height
+                    text: "-"
+                    onClicked: ShowUI.matcher.removeFile(id)
+                }
 
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 5
-                        anchors.left: parent.left
-                        text: file
-                    }
+                LongText {
+                    width: parent.width * 0.35
+                    height: parent.height
+                    text: file
                 }
 
                 Item {

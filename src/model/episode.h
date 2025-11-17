@@ -4,7 +4,8 @@
 #include <QDate>
 #include <QJsonObject>
 #include <QMap>
-#include "person.h"
+#include "cast.h"
+#include "crew.h"
 
 struct Episode {
     quint32 id;
@@ -17,8 +18,8 @@ struct Episode {
     quint16 runtime;
     bool favorite;
 
-    QMap<QString, Person> cast;
-    QMap<QString, Person> crew;
+    QList<Cast> cast;
+    QList<Crew> crew;
 
     explicit Episode();
     explicit Episode(const QJsonObject& data);

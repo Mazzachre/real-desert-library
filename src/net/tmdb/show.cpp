@@ -59,10 +59,6 @@ void Rd::Net::Tmdb::Show::get(quint32 id) {
 }
 
 void Rd::Net::Tmdb::Show::episodes(quint32 id, const QVector<quint8>& seasons) {
-    if (seasons.size() > 19) {
-        qFatal("Too many seasons (%lld) in request. API allows maximum of 19.", seasons.size());
-    }
-
     QSettings settings;
     QUrlQuery query;
 
@@ -87,7 +83,7 @@ void Rd::Net::Tmdb::Show::episodes(quint32 id, const QVector<quint8>& seasons) {
 
 void Rd::Net::Tmdb::Show::handleResult(QNetworkReply* reply) {
     if (!m_requests.contains(reply)) {
-        Q_EMIT error("Network Error", "Unknown response");
+        Q_EMIT error("Unknown TMDB response");
         reply->deleteLater();
         return;
     }
@@ -97,14 +93,14 @@ void Rd::Net::Tmdb::Show::handleResult(QNetworkReply* reply) {
     QByteArray result = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError) {
-        Q_EMIT error("Network error - " + reply->errorString(),  QString(result));
+        Q_EMIT error(reply->errorString() + ": " + QString(result));
         return;
     }
 
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(result, &jsonError);
     if (jsonError.error != QJsonParseError::NoError) {
-        Q_EMIT error("Error parsing search result", jsonError.errorString());
+        Q_EMIT error(jsonError.errorString());
         return;
     }
 

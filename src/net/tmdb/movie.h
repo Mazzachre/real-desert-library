@@ -19,7 +19,7 @@ namespace Rd {
                 Q_SLOT void get(quint32 id);
                 Q_SIGNAL void getResult(const QJsonObject& result);
 
-                Q_SIGNAL void error(const QString& header, const QString& body);
+                Q_SIGNAL void error(const QString& text);
             private:
                 enum RequestType {
                     Search,

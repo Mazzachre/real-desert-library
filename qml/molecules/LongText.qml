@@ -1,26 +1,29 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 
 Item {
+    id: root
     property string text: ""
+    property bool bold: false;
+    readonly property bool containsMouse: area.containsMouse
+    height: text.contentHeight
 
     Text {
+        id: text
         anchors.fill: parent
-        text: parent.text
+        text: root.text
+        verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         clip: true
+        font.bold: root.bold
 
-        ToolTip.visible: hovered
-        ToolTip.text: parent.text
-
-        property bool hovered: false
-
+        ToolTip.visible: area.containsMouse
+        ToolTip.text: root.text
 
         MouseArea {
+            id: area
             anchors.fill: parent
             hoverEnabled: true
-            onEntered: parent.hovered = true
-            onExited: parent.hovered = false
         }
     }
 }

@@ -2,7 +2,10 @@
 
 #include <QDebug>
 #include <QMap>
-#include "person.h"
+#include <QList>
+#include "cast.h"
+#include "crew.h"
+#include "playback.h"
 
 struct EpisodeListItem {
     quint32 id;
@@ -13,19 +16,26 @@ struct EpisodeListItem {
     QDate airDate;
     quint16 officialRuntime;
     bool favorite;
+    bool hasExtras;
 
-    QMap<QString, Person> cast;
-    QMap<QString, Person> crew;
+    QList<Cast> cast;
+    QList<Crew> crew;
 
+    quint32 fileId;
     QString path;
     quint16 actualRuntime;
     QVariantMap meta;
     QVariantMap video;
     QVariantMap audio;
+    QVariant selectedSubtitle;
+    QVariant selectedVideo;
+    QVariant selectedAudio;
     QVariantMap subtitles;
     bool multiple;
 
-    //TODO playbacks go in here too
+    QList<Playback> playback;
+
+    bool isPlayable() const;
 };
 
 QDebug operator<<(QDebug dbg, const EpisodeListItem& data);

@@ -5,6 +5,7 @@
 #include <QSqlDatabase>
 #include <QList>
 #include "cast-crew.h"
+#include "playbacks.h"
 #include "../model/episode.h"
 #include "../model/episode-list-item.h"
 
@@ -22,6 +23,7 @@ namespace Rd {
             QSqlError setFavorite(quint32 id, bool favorite);
         private:
             CastCrew* m_castCrew;
+            Playbacks* m_playbacks;
 
             using CreateFn = QSqlError (Episodes::*)(const QSqlDatabase&, const Episode&);
             std::vector<CreateFn> m_create_functions;
@@ -37,6 +39,7 @@ namespace Rd {
 
             QSqlError loadFile(const QSqlDatabase& db, EpisodeListItem& episode);
             QSqlError loadCastAndCrew(const QSqlDatabase& db, EpisodeListItem& episode);
+            QSqlError loadPlayback(const QSqlDatabase& db, EpisodeListItem& episode);
 
             QSqlError getMetaData(const QVariant& map, const QVariant& selected, QVariantMap& result);
         };

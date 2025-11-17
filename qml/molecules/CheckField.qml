@@ -1,20 +1,21 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 
 Rectangle {
     id: root
-    color: "#FFFFFF"
-    border.color: area.containsMouse ? "#80AAFF" : "#FFFFFF"
+    color: "transparent"
+    border.color: area.containsMouse ? "#80AAFF" : "transparent"
 
-    property bool state
+    property bool state: false
+    property bool enabled: true
     signal toggle()
 
     MouseArea {
         id: area
         anchors.fill: parent
-        enabled: true
+        enabled: root.enabled
         hoverEnabled: true
-        cursorShape: Qt.PointingHandCursor
+        cursorShape: root.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
         onClicked: {
             root.toggle()
         }
@@ -24,7 +25,7 @@ Rectangle {
         anchors.centerIn: parent
         width: 14
         height: 14
-        source: root.state ? "qrc:/com/realdesert/ui/images/select-true.svg" : "qrc:/com/realdesert/ui/images/select-false.svg"
+        source: root.enabled ? root.state ? "qrc:/com/realdesert/ui/images/select-true.svg" : "qrc:/com/realdesert/ui/images/select-false.svg" : "qrc:/com/realdesert/ui/images/select-disabled.svg"
     }
 }
 

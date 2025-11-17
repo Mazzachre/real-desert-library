@@ -1,10 +1,10 @@
-import QtQuick 6.4
-import QtQuick.Layouts 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
-Window {
+ApplicationWindow {
 
     Page {
         anchors.fill: parent
@@ -27,7 +27,7 @@ Window {
                     icon.source: "qrc:/com/realdesert/ui/images/config.svg"
                     icon.width: 18
                     icon.height: 18
-                    onClicked: console.log("Settings")
+                    onClicked: console.log("Settings");
                 }
             }
         }
@@ -35,7 +35,8 @@ Window {
         Loader {
             objectName: "mainLoader"
             anchors.fill: parent
-            anchors.margins: 2
+            anchors.margins: 4
+            anchors.bottomMargin: 10
         }
     }
 
@@ -75,5 +76,13 @@ Window {
         }
     }
 
-    //TODO Handle error popup
+    Overlay.overlay.children: [
+        SnackbarList {
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            z: 9999
+        }
+    ]
+
+    Blocker {}
 }

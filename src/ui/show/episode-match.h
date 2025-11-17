@@ -3,10 +3,12 @@
 #include <QAbstractListModel>
 #include <QList>
 #include <QMap>
+#include <QHash>
+#include <QByteArray>
 #include <QVariant>
 #include <QString>
-#include "../../model/file.h"
-#include "../../model/episode-list-item.h"
+#include "model/file.h"
+#include "model/episode-list-item.h"
 
 namespace Rd {
     namespace Ui {
@@ -19,7 +21,6 @@ namespace Rd {
                      IdRole = Qt::UserRole + 1,
                      PathRole,
                      FileRole,
-                     //TODO META
                      RuntimeRole,
                      MatchRole
                 };
@@ -34,6 +35,7 @@ namespace Rd {
                 Q_SIGNAL void updated();
 
                 Q_SLOT void selected(quint32 fileId, quint32 episodeId);
+                Q_SLOT void removeFile(quint32 fileId);
                 Q_SLOT void save();
 
                 QHash<int, QByteArray> roleNames() const override;

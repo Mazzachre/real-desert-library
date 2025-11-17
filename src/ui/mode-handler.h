@@ -14,6 +14,7 @@ namespace Rd {
                 Shows,
                 Movie,
                 Show,
+                Extras
             };
             Q_ENUM(Mode)
 

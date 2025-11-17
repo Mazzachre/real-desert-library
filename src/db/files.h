@@ -18,6 +18,7 @@ namespace Rd {
             QSqlError get(const quint32& id, File& file);
             QSqlError create(File& file);
             QSqlError getLinks(const quint32& id, QVariantMap& links);
+            QSqlError setSubtitle(const quint32& id, const QString& subtitle);
         };
     }
 }

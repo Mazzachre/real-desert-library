@@ -8,8 +8,8 @@ ShowListItem::ShowListItem(const QSqlRecord& record) {
     name = record.value("name").toString();
     originalName = record.value("original_name").toString();
     firstAirDate = QDate::fromString(record.value("first_air_date").toString(), Qt::ISODate);
-    episodeCount = record.value("episode_count").toInt();
-    officialEpisodeCount = record.value("official_episode_count").toInt();
+    episodeCount = record.value("episode_count").toUInt();
+    officialEpisodeCount = record.value("official_episode_count").toUInt();
 }
 
 QDebug operator<<(QDebug dbg, const ShowListItem& data) {

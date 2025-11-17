@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QDebug>
 #include <QString>
 #include <QVariant>
 #include <QMap>
@@ -11,9 +12,9 @@ struct File {
     quint32 id;
     QString path;
     QDate created;
-    QString selectedSubtitle;
-    quint8 selectedVideo;
-    quint8 selectedAudio;
+    QVariant selectedSubtitle;
+    QVariant selectedVideo;
+    QVariant selectedAudio;
     QVariantMap meta;
     quint16 runtime;
     QVariantList subtitles;

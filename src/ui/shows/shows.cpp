@@ -1,5 +1,5 @@
 #include "shows.h"
-#include "../../model/show-list-item.h"
+#include "model/show-list-item.h"
 
 Rd::Ui::Shows::Shows::Shows(QObject* parent)
 : QObject(parent)
@@ -9,21 +9,21 @@ Rd::Ui::Shows::Shows::Shows(QObject* parent)
 , m_showsFilter{new ShowsFilter}
 , m_db{new Rd::Database::Shows} {
     connect(m_searchResults, &ShowSearchList::error, this, [this](const QString& header, const QString& body) {
-        Q_EMIT error(header, body);
+        Q_EMIT warn(header + ": " + body);
     });
     connect(m_addShow, &Rd::Library::AddShow::showAdded, this, [this](quint32 id) {
         Q_EMIT showSelected(id);
     });
     connect(m_addShow, &Rd::Library::AddShow::error, this, [this](const QString& header, const QString& body) {
-        Q_EMIT error(header, body);
+        Q_EMIT warn(header + ": " + body);
     });
     connect(m_showsFilter, &ShowsFilter::error, this, [this](const QString& header, const QString& body) {
-        Q_EMIT error(header, body);
+        Q_EMIT warn(header + ": " +  body);
     });
     connect(m_showsFilter, &ShowsFilter::filterUpdated, this, [this]() {
         load();
     });
-    m_order = SortOrderWrapper::TitleAsc;
+    m_order = Enums::SortOrder::Order::TitleAsc;
 }
 
 Rd::Ui::Shows::Shows::~Shows() noexcept {
@@ -61,11 +61,11 @@ Rd::Ui::Shows::ShowsFilter* Rd::Ui::Shows::Shows::filter() {
     return m_showsFilter;
 }
 
-Rd::Ui::SortOrderWrapper::WrappedSortOrder Rd::Ui::Shows::Shows::order() {
+Rd::Enums::SortOrder::Order Rd::Ui::Shows::Shows::order() {
     return m_order;
 }
 
-void Rd::Ui::Shows::Shows::setOrder(Rd::Ui::SortOrderWrapper::WrappedSortOrder order) {
+void Rd::Ui::Shows::Shows::setOrder(Rd::Enums::SortOrder::Order order) {
     m_order = order;
     load();
     Q_EMIT orderUpdated();
@@ -73,7 +73,7 @@ void Rd::Ui::Shows::Shows::setOrder(Rd::Ui::SortOrderWrapper::WrappedSortOrder o
 
 void Rd::Ui::Shows::Shows::load() {
     QList<ShowListItem> shows;
-    QSqlError err = m_db->findShows(m_showsFilter->filter(), SortOrderWrapper::toSortOrder(m_order), shows);
+    QSqlError err = m_db->findShows(m_showsFilter->filter(), m_order, shows);
     if (err.type() != QSqlError::NoError) {
         Q_EMIT error("Error loading show list", err.text());
         return;

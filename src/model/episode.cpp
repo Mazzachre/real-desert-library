@@ -16,24 +16,16 @@ Episode::Episode(const QJsonObject& data) {
 
     QJsonArray stars = data[u"guest_stars"].toArray();
     for (const QJsonValue& val : stars) {
-        QJsonObject data = val.toObject();
-
-        Person person(data);
-        QString role = data[u"character"].toString();
-        cast.insert(role, person);
+        cast.append(Cast(val.toObject()));
     }
 
     QJsonArray workers = data[u"crew"].toArray();
     for (const QJsonValue& val : workers) {
-        QJsonObject data = val.toObject();
-
-        Person person(data);
-        QString job = data[u"department"].toString() + u":"_qs + data[u"job"].toString();
-        crew.insert(job, person);
+        crew.append(Crew(val.toObject()));
     }
 }
 
 QDebug operator<<(QDebug dbg, const Episode& data) {
-    dbg.nospace().noquote() << "Episode:(" << data.season << " " << data.episode << " " <<  data.name << " cast<: >" << data.cast << "> crew<" << data.crew << ">)";
+    dbg.nospace().noquote() << "Episode:(" << data.id << " " << data.season << " " << data.episode << " " <<  data.name << ")";
     return dbg;
 }

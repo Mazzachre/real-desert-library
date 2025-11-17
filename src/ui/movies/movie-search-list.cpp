@@ -7,8 +7,8 @@ Rd::Ui::Movies::MovieSearchList::MovieSearchList(QObject* parent)
 : QAbstractListModel(parent)
 , m_movie{new Rd::Net::Tmdb::Movie} {
     connect(m_movie, &Rd::Net::Tmdb::Movie::searchResult, this, &MovieSearchList::setResults);
-    connect(m_movie, &Rd::Net::Tmdb::Movie::error, this, [this](const QString& header, const QString& body) {
-        emit error(header, body);
+    connect(m_movie, &Rd::Net::Tmdb::Movie::error, this, [this](const QString& text) {
+        emit error("TMDB Error", text);
     });
 }
 

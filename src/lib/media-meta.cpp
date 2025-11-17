@@ -67,18 +67,43 @@ void Rd::Library::MediaMeta::getFilesMeta(const QList<QUrl>& urls, const QMap<QS
 QVariantMap Rd::Library::MediaMeta::doMimeSort(const QList<QUrl>& urls) {
     QList<QUrl> videos;
     QMap<QString, QUrl> subtitles;
+    QMap<QString, QMap<QString, QUrl>> microdvd;
     QMimeDatabase mime;
 
     for(const QUrl& url : urls) {
+        auto info = QFileInfo(url.path());
         if (m_localPath->isLocalOrSmb(url)) {
             QMimeType type = mime.mimeTypeForUrl(url);
             if(type.name().startsWith(u"video/")) {
                 videos << url;
             } else if (type.inherits("application/x-subrip")) {
-                subtitles.insert(QFileInfo(url.fileName()).completeBaseName(), url);
+                subtitles.insert(info.completeBaseName(), url);
+            } else if (type.inherits("application/octet-stream") && info.suffix() == u"idx"_qs) {
+                if (microdvd.contains(info.completeBaseName())) {
+                    microdvd[info.completeBaseName()].insert(info.suffix(), url);
+                } else {
+                    QMap<QString, QUrl> item;
+                    item.insert(info.suffix(), url);
+                    microdvd.insert(info.completeBaseName(), item);
+                }
+            } else if (type.inherits("text/x-microdvd")) {
+                if (microdvd.contains(info.completeBaseName())) {
+                    microdvd[info.completeBaseName()].insert(info.suffix(), url);
+                } else {
+                    QMap<QString, QUrl> item;
+                    item.insert(info.suffix(), url);
+                    microdvd.insert(info.completeBaseName(), item);
+                }
             } else {
                 qDebug() << "Unhandled file type" << type.name();
             }
+        }
+    }
+
+    for (auto key : microdvd.keys()) {
+        auto values = microdvd[key];
+        if (values.contains(u"idx"_qs) && values.contains(u"sub"_qs)) {
+            subtitles.insert(key, values.value(u"idx"_qs));
         }
     }
 
@@ -94,6 +119,10 @@ QList<File> Rd::Library::MediaMeta::doGetFilesMeta(const QList<QUrl>& urls, cons
     for(const QUrl& url : urls) {
         File file = getFileMeta(url);
         if (!file.isEmpty()) {
+            QString name = QFileInfo(url.fileName()).completeBaseName();
+            if (subtitles.contains(name)) {
+                file.selectedSubtitle = subtitles[name];
+            }
             files << file;
         }
     }

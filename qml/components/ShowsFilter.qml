@@ -1,5 +1,5 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
@@ -61,6 +61,24 @@ Item {
                         }
                     }
                 }
+            }
+        }
+
+        Row {
+            spacing: 4
+
+            Label {
+                font.bold: true
+                height: 21
+                verticalAlignment: Text.AlignVCenter
+                text: "Watching"
+            }
+
+            CheckField {
+                width: 21
+                height: 21
+                state: ShowsUI.filter.watching
+                onToggle: ShowsUI.filter.watching = !ShowsUI.filter.watching
             }
         }
 

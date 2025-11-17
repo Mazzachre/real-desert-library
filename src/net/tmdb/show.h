@@ -23,7 +23,7 @@ namespace Rd {
                 Q_SLOT void episodes(quint32 id, const QVector<quint8>& seasons);
                 Q_SIGNAL void episodesResult(const QJsonObject& result);
 
-                Q_SIGNAL void error(const QString& header, const QString& body);
+                Q_SIGNAL void error(const QString& text);
             private:
                 enum RequestType {
                     Search,

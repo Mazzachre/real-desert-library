@@ -59,7 +59,7 @@ void Rd::Net::Tmdb::Movie::get(quint32 id) {
 
 void Rd::Net::Tmdb::Movie::handleResult(QNetworkReply* reply) {
     if (!m_requests.contains(reply)) {
-        Q_EMIT error("Network Error", "Unknown response");
+        Q_EMIT error("Unknown TMDB response");
         reply->deleteLater();
         return;
     }
@@ -70,14 +70,14 @@ void Rd::Net::Tmdb::Movie::handleResult(QNetworkReply* reply) {
     qDebug() << "Result" << result << Qt::endl;
 
     if (reply->error() != QNetworkReply::NoError) {
-        Q_EMIT error("Network error - " + reply->errorString(),  QString(result));
+        Q_EMIT error(reply->errorString() + ": " +QString(result));
         return;
     }
 
     QJsonParseError jsonError;
     QJsonDocument doc = QJsonDocument::fromJson(result, &jsonError);
     if (jsonError.error != QJsonParseError::NoError) {
-        Q_EMIT error("Error parsing search result", jsonError.errorString());
+        Q_EMIT error(jsonError.errorString());
         return;
     }
 

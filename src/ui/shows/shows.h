@@ -4,10 +4,9 @@
 #include "show-search-list.h"
 #include "shows-list.h"
 #include "shows-filter.h"
-#include "../../lib/add-show.h"
-#include "../sort-order-wrapper.h"
-#include "../../model/sort-order.h"
-#include "../../db/shows.h"
+#include "lib/add-show.h"
+#include "db/shows.h"
+#include "enums/sort-order.h"
 
 namespace Rd {
     namespace Ui {
@@ -17,7 +16,7 @@ namespace Rd {
                 Q_PROPERTY(QAbstractListModel* searchResults READ searchResults NOTIFY searchResultsUpdated)
                 Q_PROPERTY(QAbstractListModel* list READ list NOTIFY listUpdated)
                 Q_PROPERTY(ShowsFilter* filter READ filter NOTIFY filterUpdated)
-                Q_PROPERTY(Rd::Ui::SortOrderWrapper::WrappedSortOrder order READ order WRITE setOrder NOTIFY orderUpdated)
+                Q_PROPERTY(Enums::SortOrder::Order order READ order WRITE setOrder NOTIFY orderUpdated)
             public:
                 explicit Shows(QObject* parent = nullptr);
                 ~Shows() noexcept;
@@ -37,18 +36,19 @@ namespace Rd {
                 ShowsFilter* filter();
                 Q_SIGNAL void filterUpdated();
 
-                Rd::Ui::SortOrderWrapper::WrappedSortOrder order();
-                void setOrder(Rd::Ui::SortOrderWrapper::WrappedSortOrder order);
+                Enums::SortOrder::Order order();
+                void setOrder(Enums::SortOrder::Order order);
                 Q_SIGNAL void orderUpdated();
 
                 Q_SIGNAL void error(const QString& header, const QString& body);
+                Q_SIGNAL void warn(const QString& text);
             private:
-                Rd::Library::AddShow* m_addShow;
+                Library::AddShow* m_addShow;
                 ShowSearchList* m_searchResults;
                 ShowsList* m_showsList;
                 ShowsFilter* m_showsFilter;
-                Rd::Ui::SortOrderWrapper::WrappedSortOrder m_order;
-                Rd::Database::Shows* m_db;
+                Enums::SortOrder::Order m_order;
+                Database::Shows* m_db;
 
                 void load();
             };

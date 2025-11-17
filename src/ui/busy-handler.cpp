@@ -12,7 +12,6 @@ bool Rd::Ui::BusyHandler::busy() {
 
 void Rd::Ui::BusyHandler::setBusy(bool busy) {
     m_busy = busy;
-    qDebug() << "Setting busy" << busy;
     Q_EMIT busyUpdated();
 }
 

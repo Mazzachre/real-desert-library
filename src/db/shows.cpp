@@ -7,8 +7,6 @@ Rd::Database::Shows::Shows(QObject* parent)
 , m_castCrew{new CastCrew} {
     m_create_functions = {
         &Shows::createShow,
-        &Shows::createGenres,
-        &Shows::createTags,
         &Shows::createShowCast,
         &Shows::createShowCrew
     };
@@ -16,7 +14,8 @@ Rd::Database::Shows::Shows(QObject* parent)
         &Shows::loadShow,
         &Shows::loadGenres,
         &Shows::loadTags,
-        &Shows::loadShowCastCrew
+        &Shows::loadShowCastCrew,
+        &Shows::loadHasExtras
     };
 }
 
@@ -29,29 +28,27 @@ QSqlError Rd::Database::Shows::exists(quint32 id, bool& exists) {
     QSqlQuery query(db);
     query.prepare("SELECT 1 FROM shows WHERE id = :id LIMIT 1");
     query.bindValue(":id", id);
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    if (!query.exec()) return query.lastError();
     exists = query.next();
     return QSqlError();
 }
 
-QSqlError Rd::Database::Shows::findShows(const ShowFilter& filter, SortOrder order, QList<ShowListItem>& result) {
+QSqlError Rd::Database::Shows::findShows(const ShowFilter& filter, Rd::Enums::SortOrder::Order order, QList<ShowListItem>& result) {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
     QString sql = filter.query();
 
     switch(order) {
-        case ReleaseAsc:
+        case Enums::SortOrder::Order::ReleaseAsc:
             sql += " ORDER BY first_air_date ASC";
             break;
-        case ReleaseDesc:
+        case Enums::SortOrder::Order::ReleaseDesc:
             sql += " ORDER BY first_air_date DESC";
             break;
-        case TitleAsc:
+        case Enums::SortOrder::Order::TitleAsc:
             sql += " ORDER BY shows.name ASC";
             break;
-        case TitleDesc:
+        case Enums::SortOrder::Order::TitleDesc:
             sql += " ORDER BY shows.name DESC";
             break;
     }
@@ -65,13 +62,25 @@ QSqlError Rd::Database::Shows::findShows(const ShowFilter& filter, SortOrder ord
         query.bindValue(it.key(), it.value());
     }
 
-    if(!query.exec()) {
-        return query.lastError();
-    }
+    if (!query.exec()) return query.lastError();
 
     while (query.next()) {
         result.append(ShowListItem(query.record()));
     }
+
+    return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::findByEpisode(const quint32 id, quint32& result) {
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    query.prepare("SELECT show_id FROM episodes WHERE id = :id");
+    query.bindValue(":id", id);
+
+    if (!query.exec()) return query.lastError();
+    if (!query.next()) return QSqlError("", "Show id not found", QSqlError::UnknownError);
+
+    result = query.value("show_id").toUInt();
 
     return QSqlError();
 }
@@ -106,10 +115,8 @@ QSqlError Rd::Database::Shows::saveShow(const Show& show) {
 QSqlError Rd::Database::Shows::getGenres(QMap<quint16, QString>& genres) {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
-    query.prepare("SELECT DISTINCT genres.id, genres.name FROM genres JOIN show_genres ON genres.id = show_genres.genre_id");
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    query.prepare("SELECT DISTINCT g.id, g.name FROM genres g JOIN genre_links gl ON gl.genre_id = g.id JOIN shows s ON s.imdb = gl.imdb_id;");
+    if (!query.exec()) return query.lastError();
 
     while (query.next()) {
         genres.insert(query.value("id").toInt(), query.value("name").toString());
@@ -118,19 +125,81 @@ QSqlError Rd::Database::Shows::getGenres(QMap<quint16, QString>& genres) {
     return QSqlError();
 }
 
+QSqlError Rd::Database::Shows::unlinkGenre(const QString& imdbId, quint32 genre) {
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.transaction()) {
+        return db.lastError();
+    }
+
+    QString source;
+    QSqlError srcErr = getLinkSource(db, imdbId, genre, source);
+    if (srcErr.type() != QSqlError::NoError) {
+        db.rollback();
+        return srcErr;
+    }
+
+    QSqlError delErr = deleteLink(db, imdbId, genre);
+    if (delErr.type() != QSqlError::NoError) {
+        db.rollback();
+        return delErr;
+    }
+
+    if (source == u"IMDB"_qs) {
+        QSqlError unlErr = saveUnlink(db, imdbId, genre);
+        if (unlErr.type() != QSqlError::NoError) {
+            db.rollback();
+            return unlErr;
+        }
+    }
+
+    if (!db.commit()) {
+        return db.lastError();
+    }
+
+    return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::linkGenre(const QString& imdbId, quint32 genre) {
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    query.prepare("INSERT INTO genre_links(imdb_id, genre_id, source) VALUES(:imdb, :genre, 'USER')");
+    query.bindValue(":imdb", QVariant(imdbId));
+    query.bindValue(":genre", genre);
+    query.exec();
+    return query.lastError();
+}
+
 QSqlError Rd::Database::Shows::getTags(QMap<quint16, QString>& tags) {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
     query.prepare("SELECT DISTINCT tags.id, tags.name FROM tags JOIN show_tags ON tags.id = show_tags.tag_id");
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    if (!query.exec()) return query.lastError();
 
     while (query.next()) {
         tags.insert(query.value("id").toInt(), query.value("name").toString());
     }
 
     return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::linkTag(const quint32 id, quint32 tag) {
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    query.prepare("INSERT OR IGNORE INTO show_tags(show_id, tag_id) VALUES(:showId, :tagId)");
+    query.bindValue(":showId", id);
+    query.bindValue(":tagId", tag);
+    query.exec();
+    return query.lastError();
+}
+
+QSqlError Rd::Database::Shows::unlinkTag(const quint32 id, quint32 tag) {
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    query.prepare("DELETE FROM show_tags WHERE show_id = :showId AND tag_id = :tagId");
+    query.bindValue(":showId", id);
+    query.bindValue(":tagId", tag);
+    query.exec();
+    return query.lastError();
 }
 
 QSqlError Rd::Database::Shows::createShow(const QSqlDatabase& db, const Show& show) {
@@ -149,66 +218,18 @@ QSqlError Rd::Database::Shows::createShow(const QSqlDatabase& db, const Show& sh
     return query.lastError();
 }
 
-QSqlError Rd::Database::Shows::createGenres(const QSqlDatabase& db, const Show& show) {
-    QSqlQuery create(db);
-    create.prepare("INSERT OR IGNORE INTO genres (id, name) VALUES (:id, :name)");
-    QSqlQuery link(db);
-    link.prepare("INSERT INTO show_genres (show_id, genre_id) VALUES (:show_id, :genre_id)");
-
-    for (auto it = show.genres.constBegin(); it != show.genres.constEnd(); ++it) {
-        create.bindValue(":id", it.key());
-        create.bindValue(":name", it.value());
-        link.bindValue(":show_id", show.id);
-        link.bindValue(":genre_id", it.key());
-
-        if (!create.exec()) {
-            return create.lastError();
-        }
-        if (!link.exec()) {
-            return link.lastError();
-        }
-    }
-    return QSqlError();
-}
-
-QSqlError Rd::Database::Shows::createTags(const QSqlDatabase& db, const Show& show) {
-    QSqlQuery create(db);
-    create.prepare("INSERT OR IGNORE INTO tags (id, name) VALUES (:id, :name)");
-    QSqlQuery link(db);
-    link.prepare("INSERT INTO show_tags (show_id, genre_id) VALUES (:show_id, :genre_id)");
-
-    for (auto it = show.tags.constBegin(); it != show.tags.constEnd(); ++it) {
-        create.bindValue(":id", it.key());
-        create.bindValue(":name", it.value());
-        link.bindValue(":show_id", show.id);
-        link.bindValue(":genre_id", it.key());
-
-        if (!create.exec()) {
-            return create.lastError();
-        }
-        if (!link.exec()) {
-            return link.lastError();
-        }
-    }
-    return QSqlError();
-}
-
 QSqlError Rd::Database::Shows::createShowCast(const QSqlDatabase& db, const Show& show) {
     QSqlQuery query(db);
     query.prepare("INSERT INTO show_cast (show_id, cast_crew_id, role) VALUES (:show_id, :cast_crew_id, :role)");
 
-    for (auto it = show.cast.constBegin(); it != show.cast.constEnd(); ++it) {
-        QSqlError error = m_castCrew->createPerson(it.value());
-        if (error.type() != QSqlError::NoError) {
-            return error;
-        }
+    for (auto& it : show.cast) {
+        QSqlError error = m_castCrew->createPerson(it.person);
+        if (error.type() != QSqlError::NoError) return error;
 
         query.bindValue(":show_id", show.id);
-        query.bindValue(":cast_crew_id", it.value().id);
-        query.bindValue(":role", it.key());
-        if (!query.exec()) {
-            return query.lastError();
-        }
+        query.bindValue(":cast_crew_id", it.person.id);
+        query.bindValue(":role", it.role);
+        if (!query.exec()) return query.lastError();
     }
 
     return QSqlError();
@@ -218,18 +239,14 @@ QSqlError Rd::Database::Shows::createShowCrew(const QSqlDatabase& db, const Show
     QSqlQuery query(db);
     query.prepare("INSERT INTO show_cast (show_id, cast_crew_id, job) VALUES (:show_id, :cast_crew_id, :job)");
 
-    for (auto it = show.crew.constBegin(); it != show.crew.constEnd(); ++it) {
-        QSqlError error = m_castCrew->createPerson(it.value());
-        if (error.type() != QSqlError::NoError) {
-            return error;
-        }
+    for (auto& it : show.crew) {
+        QSqlError error = m_castCrew->createPerson(it.person);
+        if (error.type() != QSqlError::NoError) return error;
 
         query.bindValue(":show_id", show.id);
-        query.bindValue(":cast_crew_id", it.value().id);
-        query.bindValue(":job", it.key());
-        if (!query.exec()) {
-            return query.lastError();
-        }
+        query.bindValue(":cast_crew_id", it.person.id);
+        query.bindValue(":job", it.job);
+        if (!query.exec()) return query.lastError();
     }
 
     return QSqlError();
@@ -239,12 +256,8 @@ QSqlError Rd::Database::Shows::loadShow(const QSqlDatabase& db, const quint32 id
     QSqlQuery query(db);
     query.prepare("SELECT * FROM shows WHERE id = :id");
     query.bindValue(":id", id);
-    if (!query.exec()) {
-        return query.lastError();
-    }
-    if (!query.next()) {
-        return QSqlError("", "Show not found", QSqlError::UnknownError);
-    }
+    if (!query.exec()) return query.lastError();
+    if (!query.next()) return QSqlError("", "Show not found", QSqlError::UnknownError);
 
     show.id = query.value("id").toInt();
     show.imdb = query.value("imdb").toString();
@@ -261,14 +274,12 @@ QSqlError Rd::Database::Shows::loadShow(const QSqlDatabase& db, const quint32 id
 
 QSqlError Rd::Database::Shows::loadGenres(const QSqlDatabase& db, const quint32 id, Show& show) {
     QSqlQuery query(db);
-    query.prepare("SELECT g.id, g.name FROM show_genres sg JOIN genres g ON g.id = sg.genre_id WHERE sg.show_id = :show_id");
-    query.bindValue(":show_id", id);
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    query.prepare("SELECT g.id, g.source, g.name FROM genre_links sg JOIN genres g ON g.id = sg.genre_id WHERE sg.imdb_id = :imdb_id ORDER BY name ASC");
+    query.bindValue(":imdb_id", show.imdb);
+    if (!query.exec()) return query.lastError();
 
     while(query.next()) {
-        show.genres.insert(query.value("id").toInt(), query.value("name").toString());
+        show.genres.append(Genre(query.record()));
     }
 
     return QSqlError();
@@ -276,14 +287,15 @@ QSqlError Rd::Database::Shows::loadGenres(const QSqlDatabase& db, const quint32 
 
 QSqlError Rd::Database::Shows::loadTags(const QSqlDatabase& db, const quint32 id, Show& show) {
     QSqlQuery query(db);
-    query.prepare("SELECT t.id, t.name FROM show_tags st JOIN tags t ON t.id = st.tag_id WHERE st.show_id = :show_id");
+    query.prepare("SELECT t.id, t.name FROM show_tags st JOIN tags t ON t.id = st.tag_id WHERE st.show_id = :show_id ORDER BY name ASC");
     query.bindValue(":show_id", id);
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    if (!query.exec()) return query.lastError();
 
     while (query.next()) {
-        show.tags.insert(query.value("id").toInt(), query.value("name").toString());
+        QVariantMap item;
+        item.insert("id", query.value("id"));
+        item.insert("name", query.value("name"));
+        show.tags.append(item);
     }
 
     return QSqlError();
@@ -291,21 +303,70 @@ QSqlError Rd::Database::Shows::loadTags(const QSqlDatabase& db, const quint32 id
 
 QSqlError Rd::Database::Shows::loadShowCastCrew(const QSqlDatabase& db, const quint32 id, Show& show) {
     QSqlQuery query(db);
-    query.prepare("SELECT cc.id, cc.name, cc.original_name, cc.profile_path, sc.job, sc.role FROM show_cast sc JOIN cast_crew cc ON cc.id = sc.cast_crew_id WHERE sc.show_id = :show_id");
+    query.prepare("SELECT cc.id, cc.name, cc.original_name, cc.profile_path, sc.job, sc.role FROM show_cast sc JOIN cast_crew cc ON cc.id = sc.cast_crew_id WHERE sc.show_id = :show_id ORDER BY cc.id");
     query.bindValue(":show_id", id);
-    if (!query.exec()) {
-        return query.lastError();
-    }
+    if (!query.exec()) return query.lastError();
 
     while (query.next()) {
-        Person person(query.record());
         if (!query.value("job").isNull()) {
-            show.crew.insert(query.value("job").toString(), person);
+            show.crew.append(Crew(query.record()));
         }
         if (!query.value("role").isNull()) {
-            show.cast.insert(query.value("role").toString(), person);
+            show.cast.append(Cast(query.record()));
         }
+    }
+
+    std::sort(show.cast.begin(), show.cast.end());
+
+    return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::loadHasExtras(const QSqlDatabase& db, const quint32 showId, Show& show) {
+    QSqlQuery query(db);
+    query.prepare("SELECT EXISTS(SELECT 1 FROM extras WHERE show_id = :showId)");
+    query.bindValue(":showId", showId);
+
+    if (!query.exec()) return query.lastError();
+
+    if (query.next()) {
+        show.hasExtras = query.value(0).toBool();
+    } else {
+        show.hasExtras = false;
     }
 
     return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::getLinkSource(const QSqlDatabase& db, const QString& imdbId, quint32 genre, QString& source) {
+    QSqlQuery query(db);
+    query.prepare("SELECT source FROM genre_links WHERE imdb_id = :imdbId AND genre_id = :genreId");
+    query.bindValue(":imdbId", QVariant(imdbId));
+    query.bindValue(":genreId", genre);
+
+    if (!query.exec()) {
+        return query.lastError();
+    }
+    if (!query.next()) {
+        return QSqlError("Not found", "No such genre link", QSqlError::NoError);
+    }
+    source = query.value("source").toString();
+    return QSqlError();
+}
+
+QSqlError Rd::Database::Shows::deleteLink(const QSqlDatabase& db, const QString& imdbId, quint32 genre) {
+    QSqlQuery query(db);
+    query.prepare("DELETE FROM genre_links WHERE imdb_id = :imdbId AND genre_id = :genreId");
+    query.bindValue(":imdbId", QVariant(imdbId));
+    query.bindValue(":genreId", genre);
+    query.exec();
+    return query.lastError();
+}
+
+QSqlError Rd::Database::Shows::saveUnlink(const QSqlDatabase& db, const QString& imdbId, quint32 genre) {
+    QSqlQuery query(db);
+    query.prepare("INSERT INTO genre_unlinks (imdb_id, genre_id) VALUES (:imdbId, :genreId)");
+    query.bindValue(":imdbId", QVariant(imdbId));
+    query.bindValue(":genreId", genre);
+    query.exec();
+    return query.lastError();
 }

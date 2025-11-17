@@ -1,5 +1,6 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
+import com.realdesert.ui 1.0
 
 Column {
     visible: definitions.length > 0
@@ -24,16 +25,16 @@ Column {
             spacing: 2
             width: root.width
 
-            Text {
-                text: modelData.key
-                font.bold: true
+            LongText {
                 width: 120
+                bold: true
+                text: modelData.key
             }
 
             Text {
                 text: modelData.value
                 wrapMode: Text.Wrap
-                width: parent.width - 125
+                width: parent.width - 135
             }
         }
     }

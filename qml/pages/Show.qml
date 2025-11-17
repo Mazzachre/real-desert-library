@@ -1,5 +1,5 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
@@ -20,17 +20,73 @@ Item {
         height: parent.height - 29
     }
 
-    Item {
+    Row {
         x: parent.width * 0.3
         y: 0
         width: parent.width * 0.7
         height: 24
+        spacing: 4
 
+        Button {
+            width: 48
+            height: 24
+
+            Image {
+                width: 14
+                height: 14
+                anchors.centerIn: parent
+                source: "qrc:/com/realdesert/ui/images/play-one.svg"
+            }
+
+            ToolTip.visible: hovered
+            ToolTip.text: "Play one file"
+
+            onClicked: {
+                ShowUI.episodes.play()
+            }
+        }
+
+        Button {
+            width: 48
+            height: 24
+
+            Image {
+                width: 14
+                height: 14
+                anchors.centerIn: parent
+                source: "qrc:/com/realdesert/ui/images/play-all.svg"
+            }
+
+            ToolTip.visible: hovered
+            ToolTip.text: "Play all files"
+
+            onClicked: {
+                ShowUI.episodes.play(true)
+            }
+        }
+
+        Button {
+            width: 24
+            height: 24
+
+            Image {
+                width: 14
+                height: 14
+                anchors.centerIn: parent
+                source: "qrc:/com/realdesert/ui/images/details.svg"
+            }
+
+            ToolTip.visible: hovered
+            ToolTip.text: "Show Details"
+
+            onClicked: {
+                showDetailDialog.open()
+            }
+        }
+
+        //TODO Set as text... If name != originalName set a ? or similar and add a tooltip...
         Text {
-            anchors.verticalCenter: parent.verticalCenter
-            anchors.leftMargin: 5
-            anchors.left: parent.left
-            text: ShowUI.name
+            text: ShowUI.show.name
         }
     }
 
@@ -49,13 +105,23 @@ Item {
         height: parent.height - 10
 
         Component.onCompleted: {
-            ShowUI.matcher.requestOpenDialog.connect(function() {
-                episodeMatcherDialog.open();
+            Qt.callLater(() => {
+                ShowUI.matcher.requestOpenDialog.connect(() => {
+                    episodeMatcherDialog.open();
+                });
             });
         }
 
         onRejected: {
             ShowUI.matcher.clear();
         }
+    }
+
+    ShowDetailDialog {
+        id: showDetailDialog
+        x: 5
+        y: 5
+        width: parent.width - 10
+        height: parent.height - 10
     }
 }

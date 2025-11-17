@@ -25,33 +25,19 @@ Show::Show(const QJsonObject& data) {
         origin.append(val.toString());
     }
 
-    QJsonArray gens = data[u"genres"].toArray();
-    for (const QJsonValue& val : gens) {
-        QJsonObject genre = val.toObject();
-        genres.insert(genre[u"id"].toInt(), genre[u"name"].toString());
-    }
-
     QJsonObject credits = data[u"credits"].toObject();
     QJsonArray stars = credits[u"cast"].toArray();
     for (const QJsonValue& val : stars) {
-        QJsonObject data = val.toObject();
-
-        Person person(data);
-        QString role = data[u"character"].toString();
-        cast.insert(role, person);
+        cast.append(Cast(val.toObject()));
     }
 
     QJsonArray workers = credits[u"crew"].toArray();
     for (const QJsonValue& val : workers) {
-        QJsonObject data = val.toObject();
-
-        Person person(data);
-        QString job = data[u"department"].toString() + u":"_qs + data[u"job"].toString();
-        crew.insert(job, person);
+        crew.append(Crew(val.toObject()));
     }
 }
 
 QDebug operator<<(QDebug dbg, const Show& data) {
-    dbg.nospace().noquote() << "Show:(" << data.id << " " <<  data.name << " cast<" << data.cast << "> crew<" << data.crew << ">)";
+    dbg.nospace().noquote() << "Show:(" << data.id << " " <<  data.name << " " << data.imdb << ")";
     return dbg;
 }

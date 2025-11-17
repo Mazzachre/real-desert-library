@@ -13,10 +13,19 @@ void Rd::Ui::Show::EpisodeDetails::setEpisode(const EpisodeListItem& episode) {
     Q_EMIT open();
 }
 
-void Rd::Ui::Show::EpisodeDetails::setFavorite() {
-    m_episode.favorite = !m_episode.favorite;
-    Q_EMIT favoriteSet(m_episode.id, m_episode.favorite);
-    Q_EMIT dataUpdated();
+void Rd::Ui::Show::EpisodeDetails::clear() {
+    m_episode = EpisodeListItem();
+}
+
+void Rd::Ui::Show::EpisodeDetails::updateFavorite(quint32 id, bool favorite) {
+    if (m_episode.id == id) {
+        m_episode.favorite = favorite;
+        Q_EMIT dataUpdated();
+    }
+}
+
+quint32 Rd::Ui::Show::EpisodeDetails::id() {
+    return m_episode.id;
 }
 
 QString Rd::Ui::Show::EpisodeDetails::name() {
@@ -25,6 +34,14 @@ QString Rd::Ui::Show::EpisodeDetails::name() {
 
 bool Rd::Ui::Show::EpisodeDetails::favorite() {
     return m_episode.favorite;
+}
+
+bool Rd::Ui::Show::EpisodeDetails::playable() {
+    return m_episode.isPlayable();
+}
+
+bool Rd::Ui::Show::EpisodeDetails::hasExtras() {
+    return m_episode.hasExtras;
 }
 
 QVariantList mapToList(const QVariantMap& map) {
@@ -76,4 +93,30 @@ QVariantList Rd::Ui::Show::EpisodeDetails::audio() {
 
 QVariantList Rd::Ui::Show::EpisodeDetails::subtitle() {
     return mapToList(m_episode.subtitles);
+}
+
+QVariantList Rd::Ui::Show::EpisodeDetails::cast() {
+    QVariantList list;
+
+    for (auto& it : m_episode.cast) {
+        QVariantMap item;
+        item.insert("value", it.role);
+        item.insert("name", it.person.name);
+        list.append(QVariant(item));
+    }
+
+    return list;
+}
+
+QVariantList Rd::Ui::Show::EpisodeDetails::crew() {
+    QVariantList list;
+
+    for (auto& it : m_episode.crew) {
+        QVariantMap item;
+        item.insert("value", it.job);
+        item.insert("name", it.person.name);
+        list.append(QVariant(item));
+    }
+
+    return list;
 }

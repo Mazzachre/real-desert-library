@@ -1,12 +1,14 @@
-import QtQuick 6.4
-import QtQuick.Controls 6.4
+import QtQuick
+import QtQuick.Controls
 import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
 Item {
+    id: root
+
     Row {
         spacing: 2
-        width: parent.width - 25
+        width: parent.width - 15
         height: 24
 
         Rectangle {
@@ -14,9 +16,9 @@ Item {
             height: 24
             color: "lightgray"
 
-            Text {
-                anchors.centerIn: parent
-                text: "SE"
+            HeaderText {
+                display: "SE"
+                name: "Season"
             }
         }
 
@@ -25,9 +27,9 @@ Item {
             height: 24
             color: "lightgray"
 
-            Text {
-                anchors.centerIn: parent
-                text: "EP"
+            HeaderText {
+                display: "EP"
+                name: "Episode"
             }
         }
 
@@ -35,6 +37,11 @@ Item {
             width: parent.width * 0.05
             height: 24
             color: "lightgray"
+
+            HeaderIcon {
+                source: "qrc:/com/realdesert/ui/images/details.svg"
+                name: "Details"
+            }
         }
 
         Rectangle {
@@ -53,11 +60,9 @@ Item {
             height: 24
             color: "lightgray"
 
-            Image {
-                anchors.centerIn: parent
-                width: 14
-                height: 14
+            HeaderIcon {
                 source: "qrc:/com/realdesert/ui/images/favorite.svg"
+                name: "Favourite"
             }
         }
 
@@ -65,12 +70,22 @@ Item {
             width: parent.width * 0.05
             height: 24
             color: "lightgray"
+
+            HeaderIcon {
+                source: "qrc:/com/realdesert/ui/images/playback.svg"
+                name: "Playback"
+            }
         }
 
         Rectangle {
             width: parent.width * 0.05
             height: 24
             color: "lightgray"
+
+            HeaderIcon {
+                source: "qrc:/com/realdesert/ui/images/subtitles.svg"
+                name: "Subtitles"
+            }
         }
 
         Rectangle {
@@ -78,11 +93,9 @@ Item {
             height: 24
             color: "lightgray"
 
-            Image {
-                anchors.centerIn: parent
-                width: 14
-                height: 14
+            HeaderIcon {
                 source: "qrc:/com/realdesert/ui/images/time.svg"
+                name: "Runtime"
             }
         }
     }
@@ -104,7 +117,7 @@ Item {
 
         delegate: Rectangle {
             height: 24
-            width: parent ? parent.width - 24 : 0
+            width: parent ? parent.width - 15 : 0
             radius: 3
             color: ShowUI.episodes.selected == id ? "#FFD580" : "#FFFFFF"
 
@@ -148,11 +161,14 @@ Item {
                         anchors.fill: parent
                         enabled: true
                         hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
+                        cursorShape: Qt.WhatsThisCursor
                         onClicked: {
                             ShowUI.episodes.openDetails(model.id)
                         }
                     }
+
+                    ToolTip.visible: detailsArea.containsMouse
+                    ToolTip.text: "Details"
 
                     Image {
                         anchors.centerIn: parent
@@ -192,27 +208,52 @@ Item {
                     width: parent.width * 0.05
                     height: parent.height
                     state: model.favorite
+                    enabled: model.playable
 
                     onToggle: {
-                        ShowUI.episodes.toggleFavorite(model.id)
+                        ShowUI.setFavorite(model.id, !model.favorite)
                     }
                 }
 
-                Item {
+                PlaybackIcon {
+                    id: playbackIcon
                     width: parent.width * 0.05
                     height: parent.height
+                    played: model.played
+                    playedFully: model.playedFully
+
+                    onClicked: {
+                        const point = playbackIcon.mapToItem(root, 0, playbackIcon.height);
+                        // playbackMenu.open(point, model.file, model.fileRuntime, [{time: "Wed May 20 03:40:13 1998", played: "0:22 of 0:45"}])
+                        playbackMenu.open(point, model.file, model.fileRuntime, model.playbackList)
+                    }
                 }
 
-                Item {
+                Rectangle {
                     width: parent.width * 0.05
                     height: parent.height
+                    color: "transparent"
+                    border.color: subtitleArea.containsMouse ? "#80AAFF" : "transparent"
+
+                    MouseArea {
+                        id: subtitleArea
+                        anchors.fill: parent
+                        enabled: playable
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+
+                        onClicked: {
+                            const point = subtitleArea.mapToItem(root, 0, subtitleArea.height);
+                            subtitleMenu.open(point, file, path, subtitleSelected, fileName);
+                        }
+                    }
 
                     Image {
                         visible: model.subtitles
                         anchors.centerIn: parent
                         width: 14
                         height: 14
-                        source: "qrc:/com/realdesert/ui/images/subtitles.svg"
+                        source: model.subtitleSelected != "" ? "qrc:/com/realdesert/ui/images/subtitles.svg" : "qrc:/com/realdesert/ui/images/subtitles-available.svg"
                     }
                 }
 
@@ -225,7 +266,7 @@ Item {
                         anchors.rightMargin: 2
                         anchors.right: parent.right
                         color: playable ? "black" : "grey"
-                        text: runtime
+                        text: model.runtime
                     }
                 }
             }
@@ -240,8 +281,22 @@ Item {
         height: parent.height - 10
     }
 
+    SubtitleMenu {
+        id: subtitleMenu
+        onSetSubtitle: function(id, file) {
+            ShowUI.setSubtitle(id, file)
+        }
+    }
+
+    PlaybackMenu {
+        id: playbackMenu
+        onSetPlayed: function(id, played) {
+            ShowUI.setPlayed(id, played)
+        }
+    }
+
     Component.onCompleted: {
-        ShowUI.details.open.connect(() => {
+        ShowUI.episode.open.connect(() => {
             episodeDetailDialog?.open();
         });
     }

@@ -2,8 +2,8 @@
 
 #include <QAbstractListModel>
 #include <QList>
-#include "../../net/tmdb/show.h"
-#include "../../model/show-search-result.h"
+#include "net/tmdb/show.h"
+#include "model/show-search-result.h"
 
 namespace Rd {
     namespace Ui {

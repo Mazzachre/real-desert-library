@@ -1,5 +1,6 @@
 #include "episode-match.h"
-#include "../file-handler.h"
+#include "ui/file-handler.h"
+#include "ui/mode-handler.h"
 #include <QFileInfo>
 
 Rd::Ui::Show::EpisodeMatch::EpisodeMatch(QObject* parent)
@@ -63,6 +64,16 @@ void Rd::Ui::Show::EpisodeMatch::selected(quint32 fileId, quint32 episodeId) {
     }
 }
 
+void Rd::Ui::Show::EpisodeMatch::removeFile(quint32 fileId) {
+    for (int row = 0; row < m_files.size(); ++row) {
+        if (m_files[row].id == fileId) {
+            beginRemoveRows(QModelIndex(), row, row);
+            m_files.removeAt(row);
+            endRemoveRows();
+        }
+    }
+}
+
 void Rd::Ui::Show::EpisodeMatch::save() {
     Q_EMIT episodesMatched(m_matches);
     clear();
@@ -96,16 +107,18 @@ QVariant Rd::Ui::Show::EpisodeMatch::data(const QModelIndex& index, int role) co
 }
 
 void Rd::Ui::Show::EpisodeMatch::handleFilesAdded(const QList<File>& files) {
-    beginResetModel();
-    for (auto& file: files) {
-        m_files.append(file);
-        quint32 match = getEpisode(findMatch(file.path));
-        if (match != 0) {
-            m_matches[file.id] = match;
+    if (ModeHandler::instance()->mode() == ModeHandler::Show) {
+        beginResetModel();
+        for (auto& file: files) {
+            m_files.append(file);
+            quint32 match = getEpisode(findMatch(file.path));
+            if (match != 0) {
+                m_matches[file.id] = match;
+            }
         }
+        endResetModel();
+        Q_EMIT requestOpenDialog();
     }
-    endResetModel();
-    Q_EMIT requestOpenDialog();
 }
 
 QVariantMap Rd::Ui::Show::EpisodeMatch::findMatch(const QString& path) {
@@ -114,8 +127,8 @@ QVariantMap Rd::Ui::Show::EpisodeMatch::findMatch(const QString& path) {
     QRegularExpressionMatch match = regex.match(path);
     if (match.hasMatch()) {
         return {
-            {"season", match.captured("season").toULongLong()},
-            {"episode", match.captured("episode").toULongLong()}
+            {"season", match.captured(u"season"_qs).toULongLong()},
+            {"episode", match.captured(u"episode"_qs).toULongLong()}
         };
     }
 

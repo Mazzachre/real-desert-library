@@ -3,8 +3,8 @@
 #include <QObject>
 #include "shows-genre-list.h"
 #include "shows-tags-list.h"
-#include "../../model/show-filter.h"
-#include "../../db/shows.h"
+#include "model/show-filter.h"
+#include "db/shows.h"
 
 namespace Rd {
     namespace Ui {
@@ -13,6 +13,7 @@ namespace Rd {
                 Q_OBJECT
                 Q_PROPERTY(quint16 newerThan READ newerThan WRITE setNewerThan NOTIFY filterUpdated)
                 Q_PROPERTY(quint16 olderThan READ olderThan WRITE setOlderThan NOTIFY filterUpdated)
+                Q_PROPERTY(bool watching READ watching WRITE setWatching NOTIFY filterUpdated)
                 Q_PROPERTY(QAbstractListModel* genres READ genres NOTIFY filterUpdated)
                 Q_PROPERTY(QAbstractListModel* tags READ tags NOTIFY filterUpdated)
             public:
@@ -27,6 +28,9 @@ namespace Rd {
 
                 quint16 olderThan();
                 void setOlderThan(quint16 value);
+
+                bool watching();
+                void setWatching(bool watching);
 
                 QAbstractListModel* genres();
                 QAbstractListModel* tags();

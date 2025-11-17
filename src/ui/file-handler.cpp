@@ -42,16 +42,11 @@ bool Rd::Ui::FileHandler::acceptDrag(const QList<QUrl>& urls) {
 
     QMimeDatabase db;
     auto mode = ModeHandler::instance()->mode();
-    if (mode == ModeHandler::Show) {
+    if (mode == ModeHandler::Show || mode == ModeHandler::Extras) {
         for(const QUrl& url : urls) {
             if (m_localPath->isLocalOrSmb(url)) {
                 QMimeType type = db.mimeTypeForUrl(url);
-                if(type.name().startsWith(u"video/")) {
-                    return true;
-                }
-                if(type.inherits("application/x-subrip")) {
-                    return true;
-                }
+                if(type.name().startsWith(u"video/")) return true;
             }
         }
     }

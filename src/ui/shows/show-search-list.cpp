@@ -1,5 +1,5 @@
 #include "show-search-list.h"
-#include "../busy-handler.h"
+#include "ui/busy-handler.h"
 #include <QJsonObject>
 #include <QJsonArray>
 
@@ -7,8 +7,8 @@ Rd::Ui::Shows::ShowSearchList::ShowSearchList(QObject* parent)
 : QAbstractListModel(parent)
 , m_show{new Rd::Net::Tmdb::Show} {
     connect(m_show, &Rd::Net::Tmdb::Show::searchResult, this, &ShowSearchList::setResults);
-    connect(m_show, &Rd::Net::Tmdb::Show::error, this, [this](const QString& header, const QString& body) {
-        emit error(header, body);
+    connect(m_show, &Rd::Net::Tmdb::Show::error, this, [this](const QString& text) {
+        emit error("TMDB Error", text);
     });
 }
 

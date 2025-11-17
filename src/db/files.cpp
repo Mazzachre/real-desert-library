@@ -59,12 +59,12 @@ QSqlError Rd::Database::Files::get(const quint32& id, File& file) {
 QSqlError Rd::Database::Files::create(File& file) {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
-    query.prepare("INSERT INTO files(path, created, meta, runtime, subtitles, video, audio) VALUES(:path, :created, :meta, :runtime, :subtitles, :video, :audio)");
-
+    query.prepare("INSERT INTO files(path, created, meta, runtime, selected_subtitle, subtitles, video, audio) VALUES(:path, :created, :meta, :runtime, :selected_subtitle, :subtitles, :video, :audio)");
     query.bindValue(":path", file.path);
     query.bindValue(":created", QVariant(QDate::currentDate().toString(Qt::ISODate)));
     query.bindValue(":meta", QString::fromUtf8(QJsonDocument::fromVariant(file.meta).toJson(QJsonDocument::Compact)));
     query.bindValue(":runtime", static_cast<int>(file.runtime));
+    query.bindValue(":selected_subtitle", file.selectedSubtitle);
     query.bindValue(":subtitles", QString::fromUtf8(QJsonDocument::fromVariant(file.subtitles).toJson(QJsonDocument::Compact)));
     query.bindValue(":video", QString::fromUtf8(QJsonDocument::fromVariant(file.video).toJson(QJsonDocument::Compact)));
     query.bindValue(":audio", QString::fromUtf8(QJsonDocument::fromVariant(file.audio).toJson(QJsonDocument::Compact)));
@@ -94,6 +94,10 @@ QSqlError Rd::Database::Files::getLinks(const quint32& id, QVariantMap& links) {
     )");
     query.bindValue(":file_id", id);
 
+    if(!query.exec()) {
+        return query.lastError();
+    }
+
     if (query.next()) {
         links["type"] = QVariant(query.value("type").toString());
         links["id"] = query.value("linked_id").toInt();
@@ -101,6 +105,20 @@ QSqlError Rd::Database::Files::getLinks(const quint32& id, QVariantMap& links) {
         if (query.next()) {
             return QSqlError("", "File has multiple links!", QSqlError::UnknownError);
         }
+    }
+
+    return QSqlError();
+}
+
+QSqlError Rd::Database::Files::setSubtitle(const quint32& id, const QString& subtitle) {
+    QSqlDatabase db = QSqlDatabase::database();
+    QSqlQuery query(db);
+    query.prepare("UPDATE files SET selected_subtitle = :selected_subtitle WHERE id = :id");
+    query.bindValue(":selected_subtitle", subtitle.isEmpty() ? QVariant(QMetaType::fromType<QString>()) : QVariant(subtitle));
+    query.bindValue(":id", id);
+
+    if(!query.exec()) {
+        return query.lastError();
     }
 
     return QSqlError();

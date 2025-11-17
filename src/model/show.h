@@ -5,8 +5,10 @@
 #include <QMap>
 #include <QJsonObject>
 #include <QSqlRecord>
-#include "person.h"
+#include "cast.h"
+#include "crew.h"
 #include "episode.h"
+#include "genre.h"
 
 struct Show {
     quint32 id;
@@ -18,13 +20,15 @@ struct Show {
     QString overview;
     QStringList languages;
     QString posterPath;
+    bool hasExtras;
 
-    QMap<quint16, QString> genres;
-    QMap<quint16, QString> tags;
-    QMap<QString, Person> cast;
-    QMap<QString, Person> crew;
+    QList<Genre> genres;
+    QVariantList tags;
 
-    explicit Show();
+    QList<Cast> cast;
+    QList<Crew> crew;
+
+    Show();
     explicit Show(const QJsonObject& data);
 };
 

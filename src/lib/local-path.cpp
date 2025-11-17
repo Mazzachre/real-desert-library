@@ -1,11 +1,11 @@
 #include "local-path.h"
 #include <unistd.h>
-#include <QDir>
 #include <QDBusInterface>
 #include <QDBusReply>
 
 Rd::Library::LocalPath::LocalPath(QObject* parent)
 : QObject(parent) {
+    m_base = "/run/user/" + QString::number(getuid()) + "/";
 }
 
 Rd::Library::LocalPath::~LocalPath() noexcept {
@@ -35,13 +35,21 @@ QString Rd::Library::LocalPath::getLocalPath(const QUrl& url) {
     return QString();
 }
 
+QUrl Rd::Library::LocalPath::reverseLocalPath(const QString& url) {
+    if (url.startsWith(m_base + u"kio-fuse-"_qs)) {
+        int index = url.indexOf(u"/smb/");
+        if (index == -1) return QUrl();
+        return QUrl(u"smb://"_qs + url.mid(index+5));
+    }
+    return QUrl::fromLocalFile(url);
+}
+
 QString Rd::Library::LocalPath::findMountedKioFusePath(const QUrl& url) {
-    QString basePath = "/run/user/" + QString::number(getuid()) + "/";
-    QDir dir(basePath);
+    QDir dir(m_base);
     QStringList entries = dir.entryList(QStringList() << "kio-fuse*", QDir::Dirs);
 
     for (const QString &entry : entries) {
-        QDir shareDir(QDir::cleanPath(basePath + u"/"_qs + entry + u"/"_qs + url.scheme() + u"/"_qs + url.host()));
+        QDir shareDir(QDir::cleanPath(m_base + u"/"_qs + entry + u"/"_qs + url.scheme() + u"/"_qs + url.host()));
         if (shareDir.exists(url.path().mid(1))) {
             return shareDir.absoluteFilePath(url.path().mid(1));
         }

@@ -68,6 +68,15 @@ void Rd::Ui::Shows::ShowsFilter::setOlderThan(quint16 value) {
     Q_EMIT filterUpdated();
 }
 
+bool Rd::Ui::Shows::ShowsFilter::watching() {
+    return m_filter.watching;
+}
+
+void Rd::Ui::Shows::ShowsFilter::setWatching(bool watching) {
+    m_filter.watching = watching;
+    Q_EMIT filterUpdated();
+}
+
 QAbstractListModel* Rd::Ui::Shows::ShowsFilter::genres() {
     return m_genres;
 }

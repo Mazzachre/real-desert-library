@@ -18,6 +18,6 @@ bool File::isEmpty() {
 }
 
 QDebug operator<<(QDebug dbg, const File& data) {
-    dbg.nospace().noquote() << "File:(" << data.id << " " << data.path << " " << data.runtime << " meta: <" <<  data.meta << "> video: <" << data.video << "> audio: <" << data.audio << "> subtitles: <" << data.subtitles << ">)";
+    dbg.nospace().noquote() << "File:(" << data.id << " " << data.path << " " << data.selectedSubtitle << " " << data.runtime << " meta: <" <<  data.meta << "> video: <" << data.video << "> audio: <" << data.audio << "> subtitles: <" << data.subtitles << ">)";
     return dbg;
 }
