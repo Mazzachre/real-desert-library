@@ -19,7 +19,7 @@ Item {
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: root.clicked(model.id)
+                onClicked: root.clicked(modelData.id)
             }
 
             Image {
@@ -27,14 +27,14 @@ Item {
                 y: 4
                 width: 14
                 height: 14
-                source: model.selected ? "qrc:/com/realdesert/ui/images/select-true.svg" : "qrc:/com/realdesert/ui/images/select-false.svg"
+                source: modelData.selected ? "qrc:/com/realdesert/ui/images/select-true.svg" : "qrc:/com/realdesert/ui/images/select-false.svg"
             }
 
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 24
-                text: model.name
+                text: modelData.name
             }
         }
     }

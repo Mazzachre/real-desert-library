@@ -90,7 +90,7 @@ Item {
                     width: parent.width
                     model: ShowsUI.filter.genres
                     onClicked: function(id) {
-                        ShowsUI.filter.genres.toggle(id);
+                        ShowsUI.filter.toggleGenre(id);
                     }
                 }
             }
@@ -104,9 +104,25 @@ Item {
                     width: parent.width
                     model: ShowsUI.filter.tags
                     onClicked: function(id) {
-                        ShowsUI.filter.tags.toggle(id);
+                        ShowsUI.filter.toggleTag(id);
                     }
                 }
+            }
+        }
+
+        PersonSearch {
+            width: parent.width
+            onSelected: function(id) {
+                ShowsUI.filter.setPerson(id);
+            }
+        }
+
+        Button {
+            width: parent.width
+            text: "Clear filters"
+            onClicked: {
+                ShowsUI.filter.reset();
+                PersonSearch.clear();
             }
         }
     }

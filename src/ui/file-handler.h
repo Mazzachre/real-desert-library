@@ -3,9 +3,9 @@
 #include <QObject>
 #include <QList>
 #include <QUrl>
-#include "../lib/media-meta.h"
-#include "../lib/local-path.h"
-#include "../db/files.h"
+#include "lib/media-meta.h"
+#include "lib/local-path.h"
+#include "db/files.h"
 
 namespace Rd {
     namespace Ui {

@@ -1,8 +1,6 @@
 #pragma once
 
 #include <QObject>
-#include "shows-genre-list.h"
-#include "shows-tags-list.h"
 #include "model/show-filter.h"
 #include "db/shows.h"
 
@@ -14,8 +12,8 @@ namespace Rd {
                 Q_PROPERTY(quint16 newerThan READ newerThan WRITE setNewerThan NOTIFY filterUpdated)
                 Q_PROPERTY(quint16 olderThan READ olderThan WRITE setOlderThan NOTIFY filterUpdated)
                 Q_PROPERTY(bool watching READ watching WRITE setWatching NOTIFY filterUpdated)
-                Q_PROPERTY(QAbstractListModel* genres READ genres NOTIFY filterUpdated)
-                Q_PROPERTY(QAbstractListModel* tags READ tags NOTIFY filterUpdated)
+                Q_PROPERTY(QVariantList genres READ genres NOTIFY filterUpdated)
+                Q_PROPERTY(QVariantList tags READ tags NOTIFY filterUpdated)
             public:
                 explicit ShowsFilter(QObject* parent = nullptr);
                 ~ShowsFilter() noexcept;
@@ -32,17 +30,24 @@ namespace Rd {
                 bool watching();
                 void setWatching(bool watching);
 
-                QAbstractListModel* genres();
-                QAbstractListModel* tags();
+                QVariantList genres();
+                Q_INVOKABLE void toggleGenre(quint16 genre);
+
+                QVariantList tags();
+                Q_INVOKABLE void toggleTag(quint16 tag);
 
                 ShowFilter filter();
                 Q_SIGNAL void filterUpdated();
 
+                Q_INVOKABLE void setPerson(quint32 id);
+
+                Q_INVOKABLE void reset();
+
                 Q_SIGNAL void error(const QString& header, const QString& body);
             private:
                 Rd::Database::Shows* m_db;
-                ShowGenreList* m_genres;
-                ShowTagsList* m_tags;
+                QVariantList m_genres;
+                QVariantList m_tags;
                 ShowFilter m_filter;
             };
         }

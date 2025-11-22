@@ -2,7 +2,6 @@
 #include "busy-handler.h"
 #include "mode-handler.h"
 #include "file-handler.h"
-#include "people/people-search.h"
 #include "../enums/extras-type.h"
 #include "../enums/sort-order.h"
 
@@ -14,6 +13,7 @@ Rd::Ui::Ui::Ui(QObject* parent)
 , m_movies{new Movies::Movies}
 , m_movie{new Movie::Movie}
 , m_extras{new Extras::Extras}
+, m_person{new People::PersonSearch}
 , m_warnings{new Warnings}
 , m_blocker{new DialogBlocker} {
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "MainUI", this);
@@ -25,13 +25,13 @@ Rd::Ui::Ui::Ui(QObject* parent)
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "MoviesUI", m_movies);
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "MovieUI", m_movie);
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "ExtrasUI", m_extras);
+    qmlRegisterSingletonInstance("com.realdesert", 1, 0, "PersonSearch", m_person);
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "Warnings", m_warnings);
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "Blocker", m_blocker);
 
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "SortOrder", Rd::Enums::SortOrder::instance());
     qmlRegisterSingletonInstance("com.realdesert", 1, 0, "ExtrasType", Rd::Enums::ExtrasType::instance());
 
-    qmlRegisterType<People::PeopleSearch>("com.realdesert", 1, 0, "PersonSearch");
 
     m_engine->addImportPath("qrc:/");
     m_engine->load(QUrl("qrc:/com/realdesert/ui/qml/main.qml"));
@@ -92,6 +92,7 @@ Rd::Ui::Ui::~Ui() noexcept {
     m_movies->deleteLater();
     m_movie->deleteLater();
     m_extras->deleteLater();
+    m_person->deleteLater();
     m_warnings->deleteLater();
     m_blocker->deleteLater();
     delete m_engine;
@@ -124,6 +125,7 @@ void Rd::Ui::Ui::handleModeChange() {
         if (ModeHandler::instance()->mode() != ModeHandler::Movies) m_movies->clear();
         if (ModeHandler::instance()->mode() != ModeHandler::Movie) m_movie->clear();
         if (ModeHandler::instance()->mode() != ModeHandler::Extras) m_extras->clear();
+        m_person->clear();
         m_blocker->reset();
 
         switch(ModeHandler::instance()->mode()) {

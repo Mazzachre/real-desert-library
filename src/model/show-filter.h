@@ -10,8 +10,10 @@ struct ShowFilter {
     QList<quint16> genres;
     QList<quint16> tags;
     bool watching;
+    quint32 person;
 
     explicit ShowFilter();
+    void reset();
 
     QString query() const;
     QVariantMap values() const;

@@ -29,5 +29,19 @@ Item {
                 onClicked: ShowUI.episodes.favorites = !ShowUI.episodes.favorites
             }
         }
+
+        Foldable {
+            width: parent.width
+            title: "Seasons"
+            content: Component {
+                SelectList {
+                    width: parent.width
+                    model: ShowUI.episodes.seasons
+                    onClicked: function(id) {
+                        ShowUI.episodes.toggleSeason(id);
+                    }
+                }
+            }
+        }
     }
 }

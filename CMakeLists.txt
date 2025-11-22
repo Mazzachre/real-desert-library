@@ -57,7 +57,7 @@ qt_add_executable(real-desert-library
     src/ui/busy-handler.cpp
     src/ui/warnings.cpp
     src/ui/dialog-blocker.cpp
-    src/ui/people/people-search.cpp
+    src/ui/people/person-search.cpp
     src/ui/extras/extras.cpp
     src/ui/extras/add-extras.cpp
     src/ui/movies/movies.cpp
@@ -65,8 +65,6 @@ qt_add_executable(real-desert-library
     src/ui/movie/movie.cpp
     src/ui/shows/shows.cpp
     src/ui/shows/show-search-list.cpp
-    src/ui/shows/shows-genre-list.cpp
-    src/ui/shows/shows-tags-list.cpp
     src/ui/shows/shows-list.cpp
     src/ui/shows/shows-filter.cpp
     src/ui/show/cast-list.cpp
@@ -117,6 +115,7 @@ qt_add_qml_module(real-desert-library
         qml/components/EpisodeList.qml
         qml/components/ShowsFilter.qml
         qml/components/ShowsList.qml
+        qml/components/PersonSearch.qml
     RESOURCES
         images/desert-logo.svg
         images/config.svg

@@ -13,6 +13,7 @@ namespace Rd {
                 Q_PROPERTY(bool playables READ playables WRITE setPlayables NOTIFY playablesUpdated)
                 Q_PROPERTY(bool favorites READ favorites WRITE setFavorites NOTIFY favoritesUpdated)
                 Q_PROPERTY(quint32 selected READ selected WRITE setSelected NOTIFY selectedUpdated)
+                Q_PROPERTY(QVariantList seasons READ seasons NOTIFY seasonsUpdated)
             public:
                 enum RoleList {
                     IdRole = Qt::UserRole + 1,
@@ -58,6 +59,10 @@ namespace Rd {
                 void setSelected(quint32 selected);
                 Q_SIGNAL void selectedUpdated();
 
+                QVariantList seasons();
+                Q_INVOKABLE void toggleSeason(quint16 season);
+                Q_SIGNAL void seasonsUpdated();
+
                 Q_INVOKABLE void play(bool list = false);
 
                 QHash<int, QByteArray> roleNames() const override;
@@ -69,6 +74,7 @@ namespace Rd {
                 bool m_favorites;
                 bool m_playables;
                 quint32 m_selected;
+                QVariantList m_seasons;
                 QList<EpisodeListItem> m_episodes;
                 QList<EpisodeListItem> m_filtered;
 

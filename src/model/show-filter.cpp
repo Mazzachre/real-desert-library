@@ -4,7 +4,17 @@
 ShowFilter::ShowFilter() {
     newerThan = 0;
     olderThan = 0;
+    person = 0;
     watching = false;
+}
+
+void ShowFilter::reset() {
+    newerThan = 0;
+    olderThan = 0;
+    person = 0;
+    watching = false;
+    genres.clear();
+    tags.clear();
 }
 
 QString ShowFilter::query() const {
@@ -47,6 +57,13 @@ QString ShowFilter::query() const {
         select += " JOIN episodes e_w ON e_w.show_id = shows.id JOIN episode_files ef_w ON ef_w.episode_id = e_w.id LEFT JOIN playbacks p_w ON p_w.file_id = ef_w.file_id";
     }
 
+    if (person > 0) {
+        select += " LEFT JOIN show_cast sc_p ON sc_p.show_id = shows.id AND sc_p.cast_crew_id = :person"
+                " LEFT JOIN episodes ep_p ON ep_p.show_id = shows.id"
+                " LEFT JOIN episode_cast ec_p ON ec_p.episode_id = ep_p.id AND ec_p.cast_crew_id = :person";
+        having << "(COUNT(DISTINCT sc_p.cast_crew_id) > 0 OR COUNT(DISTINCT ec_p.cast_crew_id) > 0)";
+    }
+
     if (!query.isEmpty()) {
         select += " WHERE " + query.join(" AND ");
     }
@@ -79,10 +96,15 @@ QVariantMap ShowFilter::values() const {
         retval.insert(":genreCount", genres.count());
     }
 
+    if (person > 0) {
+        retval.insert(":person", person);
+    }
+
     for (int i = 0; i < tags.count(); ++i) {
         QString key = QString(":tags%1").arg(i);
         retval.insert(key, tags[i]);
     }
+
     if (!tags.isEmpty()) {
         retval.insert(":tagCount", tags.count());
     }

@@ -25,8 +25,8 @@ QSqlError Rd::Database::CastCrew::createPerson(const Person& person) {
 QSqlError Rd::Database::CastCrew::findPeople(const QString& name, QList<Person>& people) {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
-    query.prepare("SELECT * FROM cast_crew WHERE WHERE LOWER(name) LIKE '%' || LOWER(:name) || '%' OR LOWER(original_name) LIKE '%' || LOWER(:name) || '%'");
-    query.bindValue(":name", QVariant(name));
+    query.prepare("SELECT * FROM cast_crew WHERE LOWER(name) LIKE '%' || :name || '%' OR LOWER(original_name) LIKE '%' || :name || '%'");
+    query.bindValue(":name", QVariant(name.toLower()));
     if (!query.exec()) {
         return query.lastError();
     }

@@ -3,6 +3,7 @@
 #include "ui/mode-handler.h"
 #include "lib/format.h"
 #include <bits/stdc++.h>
+#include <QSet>
 
 Rd::Ui::Show::EpisodeList::EpisodeList(QObject* parent)
 : QAbstractListModel(parent)
@@ -16,18 +17,34 @@ Rd::Ui::Show::EpisodeList::~EpisodeList() noexcept {
 void Rd::Ui::Show::EpisodeList::setEpisodes(const QList<EpisodeListItem>& episodes) {
     m_episodes = episodes;
     filterEpisodes();
+    QSet<quint16> seasons;
+    for (auto& episode : m_episodes) {
+        if (!seasons.contains(episode.season)) {
+            seasons << episode.season;
+            QVariantMap map = QVariantMap({
+                {"id", episode.season},
+                {"name", QString("Season %1").arg(episode.season)},
+                {"selected", false}
+            });
+            m_seasons << map;
+        }
+    }
+    Q_EMIT seasonsUpdated();
+    qDebug() << "Seasons" << m_seasons;
 }
 
 void Rd::Ui::Show::EpisodeList::clear() {
     beginResetModel();
     m_episodes.clear();
     m_filtered.clear();
+    m_seasons.clear();
     m_playables = true;
     m_favorites = false;
     m_selected = 0;
     endResetModel();
     Q_EMIT favoritesUpdated();
     Q_EMIT playablesUpdated();
+    Q_EMIT seasonsUpdated();
 }
 
 void Rd::Ui::Show::EpisodeList::updateFavorite(quint32 id, bool favorite) {
@@ -55,7 +72,13 @@ void Rd::Ui::Show::EpisodeList::updateSubtitle(quint32 fileId, const QString& su
     for (auto& item : m_episodes) {
         if (item.fileId == fileId) {
             item.selectedSubtitle = subtitle;
-            //TODO update subtitle info?
+            QUrl url(subtitle);
+            QFileInfo info(url.fileName());
+            item.subtitles = QVariantMap({
+                {"type", "external"},
+                {"file", info.completeBaseName()},
+                {"ext", info.suffix()}
+            });
             break;
         }
     }
@@ -127,6 +150,22 @@ void Rd::Ui::Show::EpisodeList::setSelected(quint32 selected) {
                 Q_EMIT selectedUpdated();
             }
             break;
+        }
+    }
+}
+
+QVariantList Rd::Ui::Show::EpisodeList::seasons() {
+    return m_seasons;
+}
+
+void Rd::Ui::Show::EpisodeList::toggleSeason(quint16 season) {
+    for (auto& item : m_seasons) {
+        auto map = item.toMap();
+        if (map["id"].toUInt() == season) {
+            map["selected"] = !map["selected"].toBool();
+            item = map;
+            Q_EMIT seasonsUpdated();
+            return;
         }
     }
 }

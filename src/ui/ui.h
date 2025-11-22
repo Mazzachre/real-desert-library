@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
+#include "people/person-search.h"
 #include "shows/shows.h"
 #include "show/show.h"
 #include "movies/movies.h"
@@ -31,6 +32,7 @@ namespace Rd {
             Movies::Movies* m_movies;
             Movie::Movie* m_movie;
             Extras::Extras* m_extras;
+            People::PersonSearch* m_person;
             Warnings* m_warnings;
             DialogBlocker* m_blocker;
 
