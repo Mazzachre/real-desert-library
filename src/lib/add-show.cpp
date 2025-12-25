@@ -1,5 +1,5 @@
 #include "add-show.h"
-#include "../ui/busy-handler.h"
+#include "ui/busy-handler.h"
 #include <QDebug>
 #include <QVariant>
 #include <QSqlDatabase>
@@ -7,12 +7,12 @@
 
 Rd::Library::AddShow::AddShow(QObject* parent)
 : QObject(parent)
-, m_show_db{new Rd::Database::Shows}
-, m_episode_db{new Rd::Database::Episodes}
-, m_show_net{new Rd::Net::Tmdb::Show} {
-    connect(m_show_net, &Rd::Net::Tmdb::Show::getResult, this, &AddShow::handleShowResult);
-    connect(m_show_net, &Rd::Net::Tmdb::Show::episodesResult, this, &AddShow::handleEpisodeResult);
-    connect(m_show_net, &Rd::Net::Tmdb::Show::error, this, [this](const QString& text) {
+, m_show_db{new Database::Shows}
+, m_episode_db{new Database::Episodes}
+, m_show_net{new Net::Tmdb::Show} {
+    connect(m_show_net, &Net::Tmdb::Show::getResult, this, &AddShow::handleShowResult);
+    connect(m_show_net, &Net::Tmdb::Show::episodesResult, this, &AddShow::handleEpisodeResult);
+    connect(m_show_net, &Net::Tmdb::Show::error, this, [this](const QString& text) {
         Q_EMIT error(u"Error adding show: "_qs, text);
     });
 }
@@ -35,7 +35,7 @@ void Rd::Library::AddShow::addShow(quint32 id) {
         return;
     }
     m_show_net->get(id);
-    Rd::Ui::BusyHandler::instance()->setBusy(true);
+    Ui::BusyHandler::instance()->setBusy(true);
 }
 
 void Rd::Library::AddShow::handleShowResult(const QJsonObject& result) {
@@ -108,7 +108,7 @@ void Rd::Library::AddShow::handleEpisodeResult(const QJsonObject& result) {
 
         m_episodes.clear();
         m_seasons.clear();
-        Rd::Ui::BusyHandler::instance()->setBusy(false);
+        Ui::BusyHandler::instance()->setBusy(false);
         Q_EMIT showAdded(id);
     }
 }

@@ -26,8 +26,10 @@ qt_add_executable(real-desert-library
     src/db/genres.cpp
     src/db/tags.cpp
     src/db/extras.cpp
+    src/db/movies.cpp
     src/db/shows.cpp
     src/db/cast-crew.cpp
+    src/lib/add-movie.cpp
     src/lib/add-show.cpp
     src/lib/media-meta.cpp
     src/lib/local-path.cpp
@@ -45,6 +47,8 @@ qt_add_executable(real-desert-library
     src/model/episode-list-item.cpp
     src/model/person.cpp
     src/model/playback.cpp
+    src/model/movie-filter.cpp
+    src/model/movie-list-item.cpp
     src/model/show.cpp
     src/model/show-filter.cpp
     src/model/show-list-item.cpp
@@ -62,6 +66,8 @@ qt_add_executable(real-desert-library
     src/ui/extras/add-extras.cpp
     src/ui/movies/movies.cpp
     src/ui/movies/movie-search-list.cpp
+    src/ui/movies/movies-list.cpp
+    src/ui/movies/movies-filter.cpp
     src/ui/movie/movie.cpp
     src/ui/shows/shows.cpp
     src/ui/shows/show-search-list.cpp
@@ -115,11 +121,14 @@ qt_add_qml_module(real-desert-library
         qml/components/EpisodeList.qml
         qml/components/ShowsFilter.qml
         qml/components/ShowsList.qml
+        qml/components/MoviesList.qml
+        qml/components/MoviesFilter.qml
         qml/components/PersonSearch.qml
     RESOURCES
-        images/desert-logo.svg
+        images/icon.svg
         images/config.svg
         images/cross.svg
+        images/search.svg
         images/plus.svg
         images/acc-closed.svg
         images/acc-open.svg
@@ -167,7 +176,7 @@ target_link_libraries(real-desert-library PRIVATE
 include(InstallRequiredSystemLibraries)
 
 install(TARGETS real-desert-library
-    DESTINATION bin
+    DESTINATION /usr/local/bin
 )
 
 include(GNUInstallDirs)
@@ -176,7 +185,7 @@ install(FILES resources/real-desert-library.desktop
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications
 )
 
-install(FILES images/desert-logo.svg
+install(FILES images/icon.svg
     DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps
     RENAME real-desert-library.svg
 )

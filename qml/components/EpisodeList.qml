@@ -208,7 +208,6 @@ Item {
                     width: parent.width * 0.05
                     height: parent.height
                     state: model.favorite
-                    enabled: model.playable
 
                     onToggle: {
                         ShowUI.setFavorite(model.id, !model.favorite)

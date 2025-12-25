@@ -1,5 +1,4 @@
 #include "shows.h"
-#include <QSqlDatabase>
 #include <QSqlQuery>
 
 Rd::Database::Shows::Shows(QObject* parent)

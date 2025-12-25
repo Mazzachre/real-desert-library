@@ -67,7 +67,6 @@ void Rd::Net::Tmdb::Movie::handleResult(QNetworkReply* reply) {
     RequestType type = m_requests.take(reply);
 
     QByteArray result = reply->readAll();
-    qDebug() << "Result" << result << Qt::endl;
 
     if (reply->error() != QNetworkReply::NoError) {
         Q_EMIT error(reply->errorString() + ": " +QString(result));

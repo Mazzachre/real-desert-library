@@ -8,7 +8,7 @@ Rd::Ui::Movie::Movie::Movie(QObject* parent)
 Rd::Ui::Movie::Movie::~Movie() noexcept {
 }
 
-void Rd::Ui::Movie::Movie::loadMovie(quint32 id) {
+void Rd::Ui::Movie::Movie::load(quint32 id) {
     qDebug() << "Load movie" << id;
 }
 

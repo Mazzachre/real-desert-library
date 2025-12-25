@@ -12,8 +12,8 @@ namespace Rd {
                 Q_OBJECT
                 Q_PROPERTY(bool playables READ playables WRITE setPlayables NOTIFY playablesUpdated)
                 Q_PROPERTY(bool favorites READ favorites WRITE setFavorites NOTIFY favoritesUpdated)
-                Q_PROPERTY(quint32 selected READ selected WRITE setSelected NOTIFY selectedUpdated)
                 Q_PROPERTY(QVariantList seasons READ seasons NOTIFY seasonsUpdated)
+                Q_PROPERTY(quint32 selected READ selected WRITE setSelected NOTIFY selectedUpdated)
             public:
                 enum RoleList {
                     IdRole = Qt::UserRole + 1,

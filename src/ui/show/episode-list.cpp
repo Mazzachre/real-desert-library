@@ -30,7 +30,6 @@ void Rd::Ui::Show::EpisodeList::setEpisodes(const QList<EpisodeListItem>& episod
         }
     }
     Q_EMIT seasonsUpdated();
-    qDebug() << "Seasons" << m_seasons;
 }
 
 void Rd::Ui::Show::EpisodeList::clear() {
@@ -164,6 +163,7 @@ void Rd::Ui::Show::EpisodeList::toggleSeason(quint16 season) {
         if (map["id"].toUInt() == season) {
             map["selected"] = !map["selected"].toBool();
             item = map;
+            filterEpisodes();
             Q_EMIT seasonsUpdated();
             return;
         }
@@ -287,20 +287,25 @@ QVariant Rd::Ui::Show::EpisodeList::data(const QModelIndex& index, int role) con
 void Rd::Ui::Show::EpisodeList::filterEpisodes() {
     beginResetModel();
     m_filtered.clear();
-    for (const auto& episode : m_episodes) {
-        if (m_favorites) {
-            if (episode.favorite) m_filtered << episode;
-        } else if (m_playables) {
-            if (episode.isPlayable()) m_filtered << episode;
-        } else {
-            m_filtered << episode;
+    QSet<quint16> seasons;
+    for (const auto& season : m_seasons) {
+        auto map = season.toMap();
+        if (map.value("selected").toBool()) {
+            seasons << map.value("id").toUInt();
         }
+    }
+    for (const auto& episode : m_episodes) {
+        if (m_favorites && !episode.favorite) continue;
+        if (m_playables && !episode.isPlayable()) continue;
+        if (!seasons.isEmpty() && !seasons.contains(episode.season)) continue;
+
+        m_filtered << episode;
     }
     endResetModel();
 }
 
 void Rd::Ui::Show::EpisodeList::addToFiltered(const EpisodeListItem& episode) {
-    int insertIndex = m_filtered.count(); // Default to inserting at the end
+    int insertIndex = m_filtered.count();
 
     for (int i = 0; i < m_filtered.count(); ++i) {
         const auto& item = m_filtered[i];

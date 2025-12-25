@@ -38,31 +38,34 @@ Rd::Ui::Ui::Ui(QObject* parent)
     if (m_engine->rootObjects().isEmpty()) qFatal("Unable to parse QML file");
     m_window = qobject_cast<QQuickWindow*>(m_engine->rootObjects().first());
     if (!m_window) qFatal("No root window created");
-    ((QWindow *)m_window)->setIcon(QIcon(":/com/realdesert/ui/images/desert-logo.svg"));
+    ((QWindow *)m_window)->setIcon(QIcon(":/com/realdesert/ui/images/icon.svg"));
 
     m_loader = m_window->findChild<QObject*>("mainLoader");
     if (!m_loader) qFatal("Loader not found!");
 
     connect(FileHandler::instance(), &FileHandler::error, this, &Ui::handleError);
-    connect(m_shows, &Shows::Shows::error, this, &Ui::handleError);
-
     connect(FileHandler::instance(), &FileHandler::warn, m_warnings, &Warnings::handleWarning);
-    connect(m_shows, &Shows::Shows::warn, m_warnings, &Warnings::handleWarning);
-    connect(m_show, &Show::Show::warn, m_warnings, &Warnings::handleWarning);
-    connect(m_extras, &Extras::Extras::warn, m_warnings, &Warnings::handleWarning);
 
+    connect(m_shows, &Shows::Shows::error, this, &Ui::handleError);
+    connect(m_shows, &Shows::Shows::warn, m_warnings, &Warnings::handleWarning);
+
+    connect(m_show, &Show::Show::warn, m_warnings, &Warnings::handleWarning);
     connect(m_show, &Show::Show::error, this, &Ui::handleError);
 
     connect(m_movies, &Movies::Movies::error, this, &Ui::handleError);
+    connect(m_movies, &Movies::Movies::warn, m_warnings, &Warnings::handleWarning);
+
     connect(m_movie, &Movie::Movie::error, this, &Ui::handleError);
+    connect(m_movie, &Movie::Movie::warn, m_warnings, &Warnings::handleWarning);
 
     connect(m_extras, &Extras::Extras::error, this, &Ui::handleError);
+    connect(m_extras, &Extras::Extras::warn, m_warnings, &Warnings::handleWarning);
 
     connect(m_shows, &Shows::Shows::showSelected, m_show, &Show::Show::load);
     connect(m_show, &Show::Show::showLoaded, this, []() {
         ModeHandler::instance()->setMode(ModeHandler::Show);
     });
-    connect(m_movies, &Movies::Movies::movieSelected, m_movie, &Movie::Movie::loadMovie);
+    connect(m_movies, &Movies::Movies::movieSelected, m_movie, &Movie::Movie::load);
     connect(m_movie, &Movie::Movie::movieLoaded, this, []() {
         ModeHandler::instance()->setMode(ModeHandler::Movie);
     });
@@ -72,7 +75,7 @@ Rd::Ui::Ui::Ui(QObject* parent)
     connect(m_extras, &Extras::Extras::goBack, this, [this](Enums::ExtrasType::Type type, quint32 id) {
         switch(type) {
             case Enums::ExtrasType::Type::Movie:
-                m_movie->loadMovie(id);
+                m_movie->load(id);
                 break;
             case Enums::ExtrasType::Type::Show:
                 m_show->load(id);

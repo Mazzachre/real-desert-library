@@ -5,10 +5,10 @@
 #include <QSqlError>
 #include <QSqlDatabase>
 #include "cast-crew.h"
-#include "../model/show.h"
-#include "../model/show-list-item.h"
-#include "../model/show-filter.h"
-#include "../enums/sort-order.h"
+#include "model/show.h"
+#include "model/show-list-item.h"
+#include "model/show-filter.h"
+#include "enums/sort-order.h"
 
 namespace Rd {
     namespace Database {

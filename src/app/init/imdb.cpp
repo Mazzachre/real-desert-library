@@ -13,8 +13,10 @@ Rd::Application::Init::Imdb::~Imdb() noexcept {
 }
 
 void Rd::Application::Init::Imdb::start() {
+    Q_EMIT progress("Initializing imdb data");
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery query(db);
+    //TODO Select the date and redo init if date is "too old"
     query.prepare("SELECT 1 FROM imdb_update LIMIT 1");
     if (!query.exec()) {
         Q_EMIT error(query.lastError().text());

@@ -3,18 +3,18 @@
 
 Rd::Ui::Shows::Shows::Shows(QObject* parent)
 : QObject(parent)
-, m_addShow{new Rd::Library::AddShow}
+, m_addShow{new Library::AddShow}
 , m_searchResults{new ShowSearchList}
 , m_showsList{new ShowsList}
 , m_showsFilter{new ShowsFilter}
-, m_db{new Rd::Database::Shows} {
+, m_db{new Database::Shows} {
     connect(m_searchResults, &ShowSearchList::error, this, [this](const QString& header, const QString& body) {
         Q_EMIT warn(header + ": " + body);
     });
-    connect(m_addShow, &Rd::Library::AddShow::showAdded, this, [this](quint32 id) {
+    connect(m_addShow, &Library::AddShow::showAdded, this, [this](quint32 id) {
         Q_EMIT showSelected(id);
     });
-    connect(m_addShow, &Rd::Library::AddShow::error, this, [this](const QString& header, const QString& body) {
+    connect(m_addShow, &Library::AddShow::error, this, [this](const QString& header, const QString& body) {
         Q_EMIT warn(header + ": " + body);
     });
     connect(m_showsFilter, &ShowsFilter::error, this, [this](const QString& header, const QString& body) {
@@ -27,6 +27,7 @@ Rd::Ui::Shows::Shows::Shows(QObject* parent)
 }
 
 Rd::Ui::Shows::Shows::~Shows() noexcept {
+    m_addShow->deleteLater();
     m_db->deleteLater();
     m_showsFilter->deleteLater();
     m_showsList->deleteLater();

@@ -36,7 +36,14 @@ Rectangle {
             x: root.width - 32
             width: 24
             height: 24
-            text: "s"
+
+            Image {
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                source: "qrc:/com/realdesert/ui/images/search.svg"
+            }
+
             onClicked: PersonSearch.search(input.text)
         }
     }
@@ -56,7 +63,14 @@ Rectangle {
             x: root.width - 32
             width: 24
             height: 24
-            text: "c"
+
+            Image {
+                anchors.centerIn: parent
+                width: 18
+                height: 18
+                source: "qrc:/com/realdesert/ui/images/cross.svg"
+            }
+
             onClicked: {
                 PersonSearch.clear()
                 root.selected(0)

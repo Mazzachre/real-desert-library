@@ -4,26 +4,28 @@ import com.realdesert 1.0
 import com.realdesert.ui 1.0
 
 Item {
-    Row {
-        anchors.fill: parent
-        padding: 5
-        spacing: 5
+    Button {
+        x: 0
+        y: 0
+        width: (parent.width * 0.3) - 5
+        height: 24
 
-        Column {
-            id: filterColumn
-            spacing: 5
-            width: parent.width * 0.3
+        text: "Add Movies"
+        onClicked: movieSearchDialog.open()
+    }
 
-            Button {
-                width: parent.width
-                height: 24
+    MoviesFilter {
+        x: 0
+        y: 29
+        width: (parent.width * 0.3) - 5
+        height: parent.height - 29
+    }
 
-                text: "Add Movies"
-                onClicked: movieSearchDialog.open()
-            }
-        }
-
-        //List of shows
+    MoviesList {
+        x : parent.width * 0.3
+        y: 0
+        width: parent.width * 0.7
+        height: parent.height
     }
 
     MovieSearchDialog {
